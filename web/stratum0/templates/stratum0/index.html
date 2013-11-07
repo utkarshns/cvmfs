@@ -1,9 +1,14 @@
-{% if stratum0_list %}
+{% if stratum1_mapping %}
     <ul>
-    {% for stratum0 in stratum0_list %}
-        <li><a href="/stratum0/{{ stratum0 }}/">{{ stratum0 }}</a></li>
+    {% for stratum0, stratum0_replicas in stratum1_mapping.items %}
+        <li>{{ stratum0 }}</li>
+        <ul>
+            {% for stratum1 in stratum0_replicas %}
+                <li>{{ stratum1 }}</li>
+            {% endfor %}
+        </ul>
     {% endfor %}
     </ul>
 {% else %}
-    <p>No stratum 0 repositories found. Please create on on the command line using `cvmfs_server mkfs`.</p>
+    <p>No stratum 0 repositories found. Please create one on the command line using `cvmfs_server mkfs`.</p>
 {% endif %}
