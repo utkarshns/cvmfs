@@ -1,0 +1,9 @@
+{% if stratum0_list %}
+    <ul>
+    {% for stratum0 in stratum0_list %}
+        <li><a href="/stratum0/{{ stratum0 }}/">{{ stratum0 }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No stratum 0 repositories found. Please create on on the command line using `cvmfs_server mkfs`.</p>
+{% endif %}
