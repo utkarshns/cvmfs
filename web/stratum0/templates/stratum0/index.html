@@ -1,3 +1,7 @@
+{% extends "layout.html" %}
+{% block breadcrumbs %}{{ block.super }} : <a href="{% url 'index' %}">Stratum0</a>{% endblock %}
+
+{% block content %}
 {% if stratum1_mapping %}
     <ul>
     {% for stratum0, stratum0_replicas in stratum1_mapping.items %}
@@ -12,3 +16,4 @@
 {% else %}
     <p>No stratum 0 repositories found. Please create one on the command line using `cvmfs_server mkfs`.</p>
 {% endif %}
+{% endblock %}

@@ -1,3 +1,7 @@
+{% extends "layout.html" %}
+{% block breadcrumbs %}{{ block.super }} : <a href="{% url 'index' %}">Stratum0</a> : <a href="{% url 'details' stratum0.fqrn %}">{{ stratum0.fqrn }}</a>{% endblock %}
+
+{% block content %}
 <h1>Details for local Stratum0 {{ stratum0 }}</h1>
 <table>
     <tr>
@@ -26,3 +30,4 @@
     </tr>
     {% endfor %}
 </table>
+{% endblock %}
