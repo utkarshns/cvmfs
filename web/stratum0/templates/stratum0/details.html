@@ -1,0 +1,28 @@
+<h1>Details for local Stratum0 {{ stratum0 }}</h1>
+<table>
+    <tr>
+        <td>Stratum0 Revision:</td>
+        <td>{{ stratum0.manifest.revision }}</td>
+    </tr>
+    <tr>
+        <td>Last Modified:</td>
+        <td>{{ stratum0.manifest.last_modified }}</td>
+    </tr>
+    <tr>
+        <td>Root Catalog Hash:</td>
+        <td>{{ stratum0.manifest.root_catalog }}</td>
+    </tr>
+    <tr>
+        <td>Number of known Stratum 1 Replicas:</td>
+        <td>{{ stratum1_list|length }}</td>
+    </tr>
+    <tr>
+        <td colspan="2"><h2>Stratum 1 Replicas</h2></td>
+    </tr>
+    {% for stratum1 in stratum1_list %}
+    <tr>
+        <td>{{ stratum1.0.name }} Replica</td>
+        <td>{{ stratum1.1.manifest.revision }} (Last Modified: {{ stratum1.1.manifest.last_modified }})</td>
+    </tr>
+    {% endfor %}
+</table>
