@@ -1,9 +1,12 @@
 {% extends "layout.html" %}
 {% block breadcrumbs %}{{ block.super }} : <a href="{% url 'index' %}">Stratum0</a> : <a href="{% url 'details' stratum0.fqrn %}">{{ stratum0.fqrn }}</a>{% endblock %}
 
+{% load staticfiles %}
+
 {% block content %}
-<h1>Details for local Stratum0 {{ stratum0 }}</h1>
-<table>
+
+<h1>Details for local Stratum 0 {{ stratum0 }}</h1>
+<table class="table">
     <tr>
         <td>Stratum0 Revision:</td>
         <td>{{ stratum0.manifest.revision }}</td>
@@ -20,14 +23,28 @@
         <td>Number of known Stratum 1 Replicas:</td>
         <td>{{ stratum1_list|length }}</td>
     </tr>
-    <tr>
-        <td colspan="2"><h2>Stratum 1 Replicas</h2></td>
-    </tr>
-    {% for stratum1 in stratum1_list %}
-    <tr>
-        <td>{{ stratum1.0.name }} Replica</td>
-        <td>{{ stratum1.1.manifest.revision }} (Last Modified: {{ stratum1.1.manifest.last_modified }})</td>
-    </tr>
-    {% endfor %}
 </table>
+
+<h2>Stratum 1 Replicas</h2>
+
+{% for stratum1 in stratum1_list %}
+<div class="container">
+    <div class="pull-left" style="margin-right: 20px">
+        {% if stratum0.manifest.revision == stratum1.1.manifest.revision %}
+        <img src="{% static "images/tick.png" %}">
+        {% else %}
+        <img src="{% static "images/cross.png" %}">
+        {% endif %}
+    </div>
+    <div class="container">
+        <div>
+            <h4>{{ stratum1.0.name }} Replica</h4>
+        </div>
+        <div>
+            Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Snapshotted: {{ stratum1.1.last_snapshot }})</small>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

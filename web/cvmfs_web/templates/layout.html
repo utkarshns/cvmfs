@@ -4,6 +4,8 @@
 
 {% load staticfiles %}
 
+<div id="wrap">
+
 <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
@@ -19,7 +21,6 @@
   </div>
 </div>
 
-<div id="wrap">
 <div class="container">
     <div id="breadcrumbs">
         {% block breadcrumbs %}
@@ -29,16 +30,18 @@
 </div>
 
 <div class="container" id="content">
-    {% block content %}
-        No content provided
-    {% endblock %}
-</div>
+  {% block content %}
+      No content provided
+  {% endblock %}
+  <div id="push"></div>
 </div>
 
 <div id="footer">
     <div class="container">
     <p class="text-muted credit">&copy; by CERN 2013</p>
     </div>
+</div>
+
 </div>
 
 {% endblock %}
