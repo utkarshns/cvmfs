@@ -12,6 +12,10 @@
         <td>{{ stratum0.manifest.revision }}</td>
     </tr>
     <tr>
+        <td>CernVM-FS Version:</td>
+        <td>{{ stratum0.version }}</td>
+    </tr>
+    <tr>
         <td>Last Modified:</td>
         <td>{{ stratum0.manifest.last_modified }}</td>
     </tr>
@@ -38,7 +42,7 @@
     </div>
     <div class="container">
         <div>
-            <h4>{{ stratum1.0.name }} Replica</h4>
+            <h4>{{ stratum1.0.name }} Replica <small>(running CernVM-FS {{ stratum1.1.version }})</small></h4>
         </div>
         <div>
             Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Snapshotted: {{ stratum1.1.last_snapshot }})</small>
