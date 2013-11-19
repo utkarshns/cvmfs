@@ -37,7 +37,11 @@
         {% if stratum0.manifest.revision == stratum1.1.manifest.revision %}
         <img src="{% static "images/tick.png" %}">
         {% else %}
-        <img src="{% static "images/cross.png" %}">
+            {% if stratum1.1.snapshotting %}
+            <img src="{% static "images/spinner.gif" %}">
+            {% else %}
+            <img src="{% static "images/cross.png" %}">
+            {% endif %}
         {% endif %}
     </div>
     <div class="container">
