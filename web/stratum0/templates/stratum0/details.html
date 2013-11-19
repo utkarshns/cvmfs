@@ -44,7 +44,7 @@
             {% endif %}
         {% endif %}
     </div>
-    <div class="container">
+    <div class="container pull-left" style="width: 500px">
         <div>
             <h4>{{ stratum1.0.name }} Replica <small>(running CernVM-FS {{ stratum1.1.version }})</small></h4>
         </div>
@@ -52,6 +52,11 @@
             Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Snapshotted: {{ stratum1.1.last_snapshot }})</small>
         </div>
     </div>
+    {% if stratum0.manifest.revision > stratum1.1.manifest.revision %}
+    <div class="pull-left" style="margin-top: 16px">
+         <a href="{% url 'replicate' stratum1.1.fqrn %}"><img src="{% static "images/snapshot.png" %}"></a>
+    </div>
+    {% endif %}
 </div>
 {% endfor %}
 
