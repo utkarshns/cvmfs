@@ -54,7 +54,7 @@
     </div>
     {% if stratum0.manifest.revision > stratum1.1.manifest.revision %}
     <div class="pull-left" style="margin-top: 16px">
-         <a href="{% url 'replicate' stratum1.1.fqrn %}"><img src="{% static "images/snapshot.png" %}"></a>
+         <a href="{% url 'replicate' stratum0.fqrn stratum1.0.id %}"><img src="{% static "images/snapshot.png" %}"></a>
     </div>
     {% endif %}
 </div>
