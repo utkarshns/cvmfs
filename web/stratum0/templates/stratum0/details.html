@@ -32,7 +32,7 @@
 <h2>Stratum 1 Replicas</h2>
 
 {% for stratum1 in stratum1_list %}
-<div class="container">
+<div class="container" style="margin-bottom: 10px">
     <div class="pull-left" style="margin-right: 20px">
         {% if stratum0.manifest.revision == stratum1.1.manifest.revision %}
         <img src="{% static "images/tick.png" %}">
@@ -46,7 +46,10 @@
     </div>
     <div class="container pull-left" style="width: 500px">
         <div>
-            <h4>{{ stratum1.0.name }} Replica <small>(running CernVM-FS {{ stratum1.1.version }})</small></h4>
+            <h4>{{ stratum1.0.name }} Replica
+            {% if stratum1.1.version != 'unknown' %}
+            <small>(running CernVM-FS {{ stratum1.1.version }})</small>
+            {% endif %}</h4>
         </div>
         <div>
             Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Snapshotted: {{ stratum1.1.last_snapshot }})</small>
