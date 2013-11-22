@@ -1,1 +1,3 @@
 Django
+python-dateutil
+requests
