@@ -52,7 +52,10 @@
             {% endif %}</h4>
         </div>
         <div>
-            Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Replicated: {{ stratum1.1.last_replication }})</small>
+            Current Revision: {{ stratum1.1.manifest.revision }}
+            {% if stratum1.1.last_replication|date:"Y" != '1970' %}
+            <small>(Last Replicated: {{ stratum1.1.last_replication }})</small>
+            {% endif %}
         </div>
     </div>
     {% if stratum0.manifest.revision > stratum1.1.manifest.revision %}
