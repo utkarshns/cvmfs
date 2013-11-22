@@ -3,6 +3,7 @@ from django.http import Http404, HttpResponse
 from django.views.generic.base import RedirectView
 from django.views.decorators.cache import never_cache
 from django.core.urlresolvers import reverse_lazy
+import datetime
 
 from stratum0.models import Stratum1
 import cvmfs.repository
@@ -17,14 +18,32 @@ def index(request):
     return render(request, 'stratum0/index.html', context)
 
 
+def _find_most_recent(stratum0, stratum1s):
+    recent = datetime.datetime.fromtimestamp(0)
+    if stratum0.manifest.last_modified > recent:
+        recent = stratum0.manifest.last_modified
+    for stratum1 in stratum1s:
+        if stratum1[1].last_replication > recent:
+            recent = stratum1[1].last_replication
+        if stratum1[1].replicating and \
+           stratum1[1].replicating_since > recent:
+            recent = stratum1[1].replicating_since
+    return recent
+
+
 @never_cache
-def details(request, stratum0_fqrn):
+def details(request, stratum0_fqrn, most_recent=False):
     try:
         stratum0  = cvmfs.repository.LocalRepository(stratum0_fqrn)
         stratum1s = [ (stratum1, cvmfs.repository.RemoteRepository(stratum1.url)) for stratum1 in
                       Stratum1.objects.filter(stratum0_fqrn=stratum0_fqrn) ]
-        context = { 'stratum0': stratum0, 'stratum1_list': stratum1s }
-        return render(request, 'stratum0/details.html', context)
+        context   = { 'stratum0'      : stratum0,
+                      'stratum1_list' : stratum1s,
+                      'most_recent'   : _find_most_recent(stratum0, stratum1s) }
+        if most_recent:
+            return render(request, 'stratum0/details_ajax.json', context, content_type="application/json")
+        else:
+            return render(request, 'stratum0/details.html', context)
     except cvmfs.repository.RepositoryNotFound, e:
         raise Http404
 
