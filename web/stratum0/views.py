@@ -3,7 +3,8 @@ from django.http import Http404, HttpResponse
 from django.views.generic.base import RedirectView
 from django.views.decorators.cache import never_cache
 from django.core.urlresolvers import reverse_lazy
-import datetime
+from datetime import datetime
+from dateutil.tz import tzutc
 
 from stratum0.models import Stratum1
 import cvmfs.repository
@@ -19,7 +20,7 @@ def index(request):
 
 
 def _find_most_recent(stratum0, stratum1s):
-    recent = datetime.datetime.fromtimestamp(0)
+    recent = datetime.fromtimestamp(0, tz=tzutc())
     if stratum0.manifest.last_modified > recent:
         recent = stratum0.manifest.last_modified
     for stratum1 in stratum1s:
