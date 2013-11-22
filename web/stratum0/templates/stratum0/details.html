@@ -63,4 +63,15 @@
 </div>
 {% endfor %}
 
+<script type="text/javascript">
+    var most_recent = {{ most_recent|date:"U" }};
+    setInterval(function(){
+        $.getJSON("{% url 'details_most_recent' stratum0.fqrn %}").done(function(data) {
+            if (most_recent < data.most_recent) {
+                location.reload();
+            }
+        });
+    }, 1000);
+</script>
+
 {% endblock %}
