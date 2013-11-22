@@ -29,7 +29,7 @@ def details(request, stratum0_fqrn):
         raise Http404
 
 
-class StartSnapshotRedirectView(RedirectView):
+class StartReplicationRedirectView(RedirectView):
     permanent=False
 
     def get_redirect_url(self, *args, **kwargs):
