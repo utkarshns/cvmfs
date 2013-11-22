@@ -17,6 +17,7 @@ def index(request):
     return render(request, 'stratum0/index.html', context)
 
 
+@never_cache
 def details(request, stratum0_fqrn):
     try:
         stratum0  = cvmfs.repository.LocalRepository(stratum0_fqrn)

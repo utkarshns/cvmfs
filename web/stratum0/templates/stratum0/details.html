@@ -37,7 +37,7 @@
         {% if stratum0.manifest.revision == stratum1.1.manifest.revision %}
         <img src="{% static "images/tick.png" %}">
         {% else %}
-            {% if stratum1.1.snapshotting %}
+            {% if stratum1.1.replicating %}
             <img src="{% static "images/spinner.gif" %}">
             {% else %}
             <img src="{% static "images/cross.png" %}">
@@ -52,12 +52,12 @@
             {% endif %}</h4>
         </div>
         <div>
-            Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Snapshotted: {{ stratum1.1.last_snapshot }})</small>
+            Current Revision: {{ stratum1.1.manifest.revision }} <small>(Last Replicated: {{ stratum1.1.last_replication }})</small>
         </div>
     </div>
     {% if stratum0.manifest.revision > stratum1.1.manifest.revision %}
     <div class="pull-left" style="margin-top: 16px">
-         <a href="{% url 'replicate' stratum0.fqrn stratum1.0.id %}"><img src="{% static "images/snapshot.png" %}"></a>
+         <a href="{% url 'replicate' stratum0.fqrn stratum1.0.id %}"><img src="{% static "images/replicate.png" %}"></a>
     </div>
     {% endif %}
 </div>
