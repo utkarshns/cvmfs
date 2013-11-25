@@ -5,7 +5,12 @@
 
 {% block content %}
 
-<h1>Details for local Stratum 0 {{ stratum0 }}</h1>
+<div class="container" style="margin-top: 20px; margin-bottom: 30px">
+<img src="{% static "images/stratum0.png" %}" class="pull-left" style="margin-right: 20px">
+<h1 style="margin: auto">{{ stratum0 }}</h1>
+</div>
+
+<h2>Local Stratum 0</h2>
 <table class="table">
     <tr>
         <td>Stratum0 Revision:</td>
