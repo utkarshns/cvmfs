@@ -1,0 +1,14 @@
+{
+    "status"           : "ok",
+    "name"             : "{{ stratum1.name }}",
+    "fqrn"             : "{{ repo.manifest.repository_name }}",
+    "version"          : "{{ repo.version }}",
+    "revision"         : "{{ repo.manifest.revision }}",
+    "rest_api"         : "{{ repo.has_rest_api }}",
+    "replicating"      : "{{ repo.replicating }}",
+  {% if repo.last_replication|date:"Y" != '1970' %}
+    "last_replication" : "{{ repo.last_replication }}"
+  {% else %}
+  	"last_replication" : "unknown"
+  {% endif %}
+}

@@ -44,6 +44,21 @@ def details(request, stratum0_fqrn):
         raise Http404
 
 
+@never_cache
+def stratum1_details(request, stratum0_fqrn, stratum1_id):
+    stratum1 = get_object_or_404(Stratum1, pk=stratum1_id)
+    if stratum1.stratum0_fqrn != stratum0_fqrn:
+        raise Http404
+    try:
+        s1_repo = cvmfs.repository.RemoteRepository(stratum1.url)
+        context = { 'stratum1' : stratum1, 'repo' : s1_repo }
+        return render(request, 'stratum0/stratum1_details.json', context,
+                      content_type="application/json")
+    except cvmfs.repository.RepositoryNotFound, e:
+        return render(request, 'stratum0/stratum1_not_found.json',
+                      content_type="application/json")
+
+
 class StartReplicationRedirectView(RedirectView):
     permanent=False
 

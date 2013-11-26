@@ -1,0 +1,4 @@
+{
+    "name"   : "{{ stratum0_name }}",
+    "status" : "not found"
+}
