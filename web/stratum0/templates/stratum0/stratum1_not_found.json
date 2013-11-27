@@ -1,4 +1,5 @@
 {
-    "name"   : "{{ stratum0_name }}",
+    "name"   : "{{ stratum0_fqrn }}",
+    "id"     : {{ stratum1_id }},
     "status" : "not found"
 }

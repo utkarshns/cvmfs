@@ -64,14 +64,19 @@ function replace_image(img_object, nem_img_filename) {
     update_retina_image(img_object);
 }
 
-window.onload = function() {
-    for (var i = 0; i < stratum1s.length; ++i) {
-        $.getJSON(stratum1s[i].info_url).done(function(data) {
-            if (data.status != "ok") return;
-            var s1_dom_id = '#stratum1_' + data.name;
+function update_stratum1_status(stratum1) {
+    var s1_dom_id = '#stratum1_' + stratum1.id;
+    var s1_status_img = $(s1_dom_id + " .stratum1_state");
+
+    $.getJSON(stratum1.info_url)
+        .done(function(data) {
+            // show a red flag if something went wrong
+            if (data.status != "ok") {
+                replace_image(s1_status_img, "fail.png");
+                return;
+            };
 
             // insert status icon
-            var s1_status_img = $(s1_dom_id + " .stratum1_state");
             if (data.replicating == "True") {
                 replace_image(s1_status_img, "spinner.gif");
             } else if (data.revision != stratum0_revision) {
@@ -94,18 +99,28 @@ window.onload = function() {
             $(s1_dom_id + " .stratum1_last_repl").html(data.last_replication);
 
             // show replication button
-            if (data.rest_api != "True" || data.revision == stratum0_revision) {
-                $(s1_dom_id + " .stratum1_repl_button").hide();
+            if (data.rest_api == "True" && data.revision != stratum0_revision) {
+                $(s1_dom_id + " .stratum1_repl_button").show();
+                update_retina_image($(s1_dom_id + " .stratum1_repl_button img"));
             }
+        })
+        .fail(function(data) {
+            // show a red flag if something went wrong
+            replace_image(s1_status_img, "fail.png");
         });
+}
+
+window.onload = function() {
+    for (var i = 0; i < stratum1s.length; ++i) {
+        update_stratum1_status(stratum1s[i]);
     }
 }
 </script>
 
 {% for stratum1 in stratum1_list %}
-<div class="container" style="margin-bottom: 20px" id="stratum1_{{ stratum1.name }}">
-    <div class="pull-left" style="margin-right: 20px">
-        <img src="{% static "images/spinner.gif" %}" class="stratum1_state">
+<div class="container" style="margin-bottom: 20px" id="stratum1_{{ stratum1.id }}">
+    <div class="pull-left" style="margin-right: 20px; width: 64px; height: 64px">
+        <img src="{% static "images/loading.gif" %}" class="stratum1_state">
     </div>
     <div class="container pull-left" style="width: 500px">
         <div>
@@ -116,8 +131,10 @@ window.onload = function() {
             <small>(Last Replication: <span class="stratum1_last_repl"></span>)</small>
         </div>
     </div>
-    <div class="pull-left stratum1_repl_button" style="margin-top: 16px">
-         <a href="{% url 'replicate' stratum0.fqrn stratum1.id %}" class="stratum1_repl_link"><img src="{% static "images/replicate.png" %}"></a>
+    <div class="pull-left stratum1_repl_button" style="margin-top: 16px; display: none;">
+         <a href="{% url 'replicate' stratum0.fqrn stratum1.id %}" class="stratum1_repl_link">
+             <img src="{% static "images/replicate.png" %}" width="32px" height="32px">
+         </a>
     </div>
 </div>
 {% endfor %}
