@@ -8,7 +8,7 @@
     "stratum0_revision" : "{{ stratum0.manifest.revision }}",
     "rest_api"          : "{{ stratum1.has_rest_api }}",
     "replicating"       : "{{ stratum1.replicating }}",
-  {% if repo.last_replication|date:"Y" != '1970' %}
+  {% if stratum1.last_replication|date:"Y" != '1970' %}
     "last_replication"  : "{{ stratum1.last_replication.isoformat }}"
   {% else %}
     "last_replication"  : "unknown"
