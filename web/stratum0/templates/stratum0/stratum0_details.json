@@ -1,0 +1,8 @@
+{
+    "status"            : "ok",
+    "fqrn"              : "{{ stratum0.manifest.repository_name }}",
+    "version"           : "{{ stratum0.version }}",
+    "revision"          : "{{ stratum0.manifest.revision }}",
+    "last_modified"     : "{{ stratum0.manifest.last_modified.isoformat }}",
+    "root_catalog_hash" : "{{ stratum0.manifest.root_catalog }}"
+}

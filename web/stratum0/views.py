@@ -45,13 +45,31 @@ def details(request, stratum0_fqrn):
 
 
 @never_cache
+def stratum0_details(request, stratum0_fqrn):
+    try:
+        stratum0 = cvmfs.repository.LocalRepository(stratum0_fqrn)
+        context  = { 'stratum0' : stratum0 }
+        return render(request, 'stratum0/stratum0_details.json', context,
+                      content_type="application/json")
+    except cvmfs.repository.RepositoryNotFound, e:
+        raise Http404
+
+
+@never_cache
 def stratum1_details(request, stratum0_fqrn, stratum1_id):
-    stratum1 = get_object_or_404(Stratum1, pk=stratum1_id)
-    if stratum1.stratum0_fqrn != stratum0_fqrn:
+    stratum0 = None
+    try:
+        stratum0 = cvmfs.repository.LocalRepository(stratum0_fqrn)
+    except cvmfs.repository.RepositoryNotFound, e:
+        raise Http404
+    s1_ref = get_object_or_404(Stratum1, pk=stratum1_id)
+    if s1_ref.stratum0_fqrn != stratum0.fqrn:
         raise Http404
     try:
-        s1_repo = cvmfs.repository.RemoteRepository(stratum1.url)
-        context = { 'stratum1' : stratum1, 'repo' : s1_repo }
+        stratum1 = cvmfs.repository.RemoteRepository(s1_ref.url)
+        context = { 'stratum0'     : stratum0,
+                    'stratum1'     : stratum1,
+                    'stratum1_ref' : s1_ref }
         return render(request, 'stratum0/stratum1_details.json', context,
                       content_type="application/json")
     except cvmfs.repository.RepositoryNotFound, e:

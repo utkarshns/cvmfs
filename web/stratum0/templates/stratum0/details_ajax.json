@@ -1,3 +1,0 @@
-{
-    "most_recent": {{ most_recent|date:"U" }}
-}

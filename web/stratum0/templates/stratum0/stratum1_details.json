@@ -1,15 +1,16 @@
 {
-    "status"           : "ok",
-    "name"             : "{{ stratum1.name }}",
-    "id"               : {{ stratum1.id }},
-    "fqrn"             : "{{ repo.manifest.repository_name }}",
-    "version"          : "{{ repo.version }}",
-    "revision"         : "{{ repo.manifest.revision }}",
-    "rest_api"         : "{{ repo.has_rest_api }}",
-    "replicating"      : "{{ repo.replicating }}",
+    "status"            : "ok",
+    "name"              : "{{ stratum1_ref.name }}",
+    "id"                : {{ stratum1_ref.id }},
+    "fqrn"              : "{{ stratum1.manifest.repository_name }}",
+    "version"           : "{{ stratum1.version }}",
+    "revision"          : "{{ stratum1.manifest.revision }}",
+    "stratum0_revision" : "{{ stratum0.manifest.revision }}",
+    "rest_api"          : "{{ stratum1.has_rest_api }}",
+    "replicating"       : "{{ stratum1.replicating }}",
   {% if repo.last_replication|date:"Y" != '1970' %}
-    "last_replication" : "{{ repo.last_replication.isoformat }}"
+    "last_replication"  : "{{ stratum1.last_replication.isoformat }}"
   {% else %}
-  	"last_replication" : "unknown"
+    "last_replication"  : "unknown"
   {% endif %}
 }
