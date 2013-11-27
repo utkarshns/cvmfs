@@ -48,6 +48,18 @@ var stratum1s = [
 ];
 var stratum0_revision = {{ stratum0.manifest.revision }};
 
+function compare_json(j1, j2) {
+    var k1 = Object.keys(j1).sort();
+    var k2 = Object.keys(j2).sort();
+    if (k1.length != k2.length) return false;
+    for (var i = 0; i < k1.length; ++i) {
+        if (k1[i] != k2[i]) return false;
+        if (typeof j1[k1[i]] != typeof j2[k2[i]]) return false;
+        if (j1[k1[i]] != j2[k2[i]]) return false;
+    }
+    return true;
+}
+
 function update_retina_image(img_object) {
     var is_retina = img_object.attr("src").match(/^(.*)@2x(\..*)$/);
     if (is_retina) {
@@ -64,45 +76,75 @@ function replace_image(img_object, nem_img_filename) {
     update_retina_image(img_object);
 }
 
+function update_stratum1_display(s1_dom_id, json_data) {
+    var s1_status_img         = $(s1_dom_id + " .stratum1_state");
+    var s1_details_div        = $(s1_dom_id + " .stratum1_details");
+    var s1_replication_button = $(s1_dom_id + " .stratum1_repl_button");
+
+    if (json_data.status != "ok") {
+        // show a red flag if something went wrong
+        var s1_status_img = $(s1_dom_id + " .stratum1_state");
+        replace_image(s1_status_img, "fail.png");
+        s1_details_div.hide();
+        return;
+    } else {
+        // uncover details div
+        $(s1_dom_id + " .stratum1_details").show();
+    }
+
+    // insert status icon
+    if (json_data.replicating == "True") {
+        replace_image(s1_status_img, "spinner.gif");
+    } else if (json_data.revision != stratum0_revision) {
+        replace_image(s1_status_img, "cross.png");
+    } else {
+        replace_image(s1_status_img, "tick.png");
+    }
+
+    // insert CernVM-FS version
+    var v_str = "(does not provide RESTful API)";
+    if (json_data.rest_api == "True") {
+        var v_str = "(running CernVM-FS " + json_data.version + ")";
+    }
+    $(s1_dom_id + " .stratum1_version").html(v_str);
+
+    // insert Stratum1 revision numbers
+    $(s1_dom_id + " .stratum1_revision").html(json_data.revision);
+
+    // insert last replication timestamp
+    $(s1_dom_id + " .stratum1_last_repl").html(json_data.last_replication);
+
+    // show replication button
+    if (json_data.rest_api == "True" && json_data.revision != stratum0_revision) {
+        s1_replication_button.show();
+    } else {
+        s1_replication_button.hide();
+    }
+    update_retina_image($(s1_dom_id + " .stratum1_repl_button img"));
+}
+
 function update_stratum1_status(stratum1) {
     var s1_dom_id = '#stratum1_' + stratum1.id;
-    var s1_status_img = $(s1_dom_id + " .stratum1_state");
+
+    var old_info          = (arguments.length > 1) ? arguments[1] : null;
+    var nothing_new_since = (arguments.length > 2) ? arguments[2] : 1;
 
     $.getJSON(stratum1.info_url)
         .done(function(data) {
-            // show a red flag if something went wrong
-            if (data.status != "ok") {
-                replace_image(s1_status_img, "fail.png");
-                return;
-            };
-
-            // insert status icon
-            if (data.replicating == "True") {
-                replace_image(s1_status_img, "spinner.gif");
-            } else if (data.revision != stratum0_revision) {
-                replace_image(s1_status_img, "cross.png");
+            // check if something has changed
+            if (!old_info || !compare_json(old_info, data)) {
+                nothing_new_since = 1;
+                update_stratum1_display(s1_dom_id, data);
             } else {
-                replace_image(s1_status_img, "tick.png");
+                ++nothing_new_since;
             }
 
-            // insert CernVM-FS version
-            var v_str = "(does not provide RESTful API)";
-            if (data.rest_api == "True") {
-                var v_str = "(running CernVM-FS " + data.version + ")";
-            }
-            $(s1_dom_id + " .stratum1_version").html(v_str);
-
-            // insert Stratum1 revision numbers
-            $(s1_dom_id + " .stratum1_revision").html(data.revision);
-
-            // insert last replication timestamp
-            $(s1_dom_id + " .stratum1_last_repl").html(data.last_replication);
-
-            // show replication button
-            if (data.rest_api == "True" && data.revision != stratum0_revision) {
-                $(s1_dom_id + " .stratum1_repl_button").show();
-                update_retina_image($(s1_dom_id + " .stratum1_repl_button img"));
-            }
+            // leaky bucket update check (maximal interval is 5 minutes)
+            var next_update = Math.min(1000 * Math.pow(2, nothing_new_since),
+                                       1000 * 60 * 5);
+            setTimeout(function() {
+                           update_stratum1_status(stratum1, data, nothing_new_since);
+                       }, next_update);
         })
         .fail(function(data) {
             // show a red flag if something went wrong
@@ -126,7 +168,7 @@ window.onload = function() {
         <div>
             <h4>{{ stratum1.name }} Replica <small class="stratum1_version"></small></h4>
         </div>
-        <div>
+        <div class="stratum1_details" style="display: none;">
             Current Revision: <span class="stratum1_revision"></span>
             <small>(Last Replication: <span class="stratum1_last_repl"></span>)</small>
         </div>
