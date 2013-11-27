@@ -48,10 +48,20 @@ var stratum1s = [
 ];
 var stratum0_revision = {{ stratum0.manifest.revision }};
 
+function update_retina_image(img_object) {
+    var is_retina = img_object.attr("src").match(/^(.*)@2x(\..*)$/);
+    if (is_retina) {
+        img_object.attr("src", is_retina[1] + is_retina[2]);
+    }
+    img_object.attr("width", "");
+    img_object.attr("height", "");
+    new RetinaImage(img_object[0])
+}
+
 function replace_image(img_object, nem_img_filename) {
     var base = img_object.attr("src").match(/([^\.]+\/)[^\/]+/)[1];
     img_object.attr("src", base + nem_img_filename)
-    new RetinaImage(img_object[0])
+    update_retina_image(img_object);
 }
 
 window.onload = function() {
