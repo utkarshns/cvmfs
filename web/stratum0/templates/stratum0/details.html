@@ -22,7 +22,7 @@
     </tr>
     <tr>
         <td>Last Modified:</td>
-        <td>{{ stratum0.manifest.last_modified }}</td>
+        <td>{{ stratum0.manifest.last_modified.isoformat }}</td>
     </tr>
     <tr>
         <td>Root Catalog Hash:</td>
@@ -112,7 +112,7 @@ function update_stratum1_display(s1_dom_id, json_data) {
     $(s1_dom_id + " .stratum1_revision").html(json_data.revision);
 
     // insert last replication timestamp
-    $(s1_dom_id + " .stratum1_last_repl").html(json_data.last_replication);
+    $(s1_dom_id + " .stratum1_last_repl").html(new Date(json_data.last_replication));
 
     // show replication button
     if (json_data.rest_api == "True" && json_data.revision != stratum0_revision) {

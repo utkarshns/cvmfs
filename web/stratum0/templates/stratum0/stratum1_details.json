@@ -8,7 +8,7 @@
     "rest_api"         : "{{ repo.has_rest_api }}",
     "replicating"      : "{{ repo.replicating }}",
   {% if repo.last_replication|date:"Y" != '1970' %}
-    "last_replication" : "{{ repo.last_replication }}"
+    "last_replication" : "{{ repo.last_replication.isoformat }}"
   {% else %}
   	"last_replication" : "unknown"
   {% endif %}
