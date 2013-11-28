@@ -7,12 +7,12 @@
 
 <div class="container" style="margin-top: 20px; margin-bottom: 30px">
 <img src="{% static "images/stratum0.png" %}" class="pull-left" style="margin-right: 20px">
-<h1 style="margin: auto">{{ stratum0 }}</h1>
+<h1 style="margin: auto">{{ stratum0.name }} ({{ stratum0.fqrn }})</h1>
 </div>
 
 <script type="text/javascript">
 var stratum1s = [
-{% for stratum1 in stratum1_list %}
+{% for stratum1 in stratum1s %}
 {
     "id"            : "{{ stratum1.id   }}",
     "name"          : "{{ stratum1.name }}",
@@ -21,7 +21,7 @@ var stratum1s = [
 {% endfor %}
 ];
 
-var initial_stratum0_revision = "{{ stratum0.manifest.revision }}";
+var initial_stratum0_revision = "{{ stratum0.repository.manifest.revision }}";
 var stratum0_fqrn             = "{{ stratum0.fqrn }}";
 var stratum0_info_url         = "{% url 'stratum0_details' stratum0.fqrn %}";
 
@@ -102,7 +102,7 @@ function update_stratum0_display(s0_dom_id, json_data) {
 
 function update_stratum1_display(s1_dom_id, json_data) {
     if (initial_stratum0_revision != json_data.stratum0_revision) {
-        location.reload();
+       location.reload();
     }
 
     var s1_status_img         = $(s1_dom_id + " .stratum1_state");
@@ -210,14 +210,14 @@ window.onload = function() {
         </tr>
         <tr>
             <td>Number of known Stratum 1 Replicas:</td>
-            <td class="stratum0_replicas">{{ stratum1_list|length }}</td>
+            <td class="stratum0_replicas">{{ stratum1s|length }}</td>
         </tr>
     </table>
 </div>
 
 <h2>Stratum 1 Replicas</h2>
 
-{% for stratum1 in stratum1_list %}
+{% for stratum1 in stratum1s %}
 <div class="container" style="margin-bottom: 20px" id="stratum1_{{ stratum1.id }}">
     <div class="pull-left" style="margin-right: 20px; width: 64px; height: 64px">
         <img src="{% static "images/loading.gif" %}" class="stratum1_state">
