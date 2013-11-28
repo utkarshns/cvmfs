@@ -6,16 +6,12 @@ from django.core.urlresolvers import reverse_lazy
 from datetime import datetime
 from dateutil.tz import tzutc
 
-from stratum0.models import Stratum1
+from stratum0.models import Stratum0, Stratum1
 import cvmfs.repository
 
 def index(request):
-    stratum1_mapping = {
-        stratum0: [ cvmfs.repository.RemoteRepository(stratum1.url) for stratum1 in
-                    Stratum1.objects.filter(stratum0_fqrn=stratum0) ]
-        for stratum0 in cvmfs.repository.all_local_stratum0()
-    }
-    context = { 'stratum1_mapping': stratum1_mapping }
+    stratum0s = Stratum0.objects.all()
+    context = { 'stratum0s': stratum0s }
     return render(request, 'stratum0/index.html', context)
 
 
