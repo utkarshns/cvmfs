@@ -48,19 +48,19 @@ class StartReplicationRedirectView(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         stratum0_fqrn = kwargs['stratum0_fqrn']
         stratum1_id   = kwargs['stratum1_id']
-        stratum1_info = get_object_or_404(Stratum1, pk=stratum1_id)
+        stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
+        stratum1 = get_object_or_404(Stratum1, pk=stratum1_id, stratum0=stratum0)
+        stratum1_repo = stratum1.repository()
 
-        if stratum1_info.stratum0_fqrn != stratum0_fqrn:
-            raise Http404("FQRNs differ (%s : %s)" % (stratum1_info.stratum0_fqrn,
-                                                      stratum0_fqrn))
+        if not stratum1_repo:
+            raise Http404("Stratum 1 not found under %s" % stratum1.url)
 
-        stratum1 = cvmfs.repository.RemoteRepository(stratum1_info.url)
-        if not stratum1.has_rest_api():
-            raise Http404("Stratum 1 at %s does not provide a REST API" % stratum1_info.url)
+        if not stratum1_repo.has_rest_api():
+            raise Http404("Stratum 1 does not provide a REST API")
 
-        if stratum1.type != 'stratum1':
-            raise Http404("%s is not a Stratum 1" % stratum1_info.url)
+        if stratum1_repo.type != 'stratum1':
+            raise Http404("%s is not a Stratum 1" % stratum1.name)
 
-        stratum1.start_replication()
-        return reverse_lazy('details', kwargs={'stratum0_fqrn': stratum0_fqrn},
+        stratum1_repo.start_replication()
+        return reverse_lazy('details', kwargs={'stratum0_fqrn': stratum0.fqrn},
                             current_app='stratum0')
