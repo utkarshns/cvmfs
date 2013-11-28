@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import admin
-from stratum0.models import Stratum1
+from stratum0.models import Stratum0, Stratum1
 
 import cvmfs.repository
 
@@ -32,16 +32,16 @@ class Stratum1AdminForm(forms.ModelForm):
 
 
 class Stratum1Admin(admin.ModelAdmin):
-    fields       = ['name', 'url']
+    fields       = ['name', 'url', 'stratum0']
     form         = Stratum1AdminForm
-    list_display = ['url', 'stratum0_fqrn', 'name']
-    list_filter  = ['stratum0_fqrn']
+    list_display = ['name', 'stratum0', 'url' ]
+    list_filter  = ['stratum0']
 
     def save_model(self, request, obj, form, change):
         # availability of <obj.url> was checked in Stratum1AdminForm.clean
         repo = cvmfs.repository.RemoteRepository(obj.url)
-        obj.stratum0_fqrn = repo.fqrn
         super(Stratum1Admin, self).save_model(request, obj, form, change)
 
 
 admin.site.register(Stratum1, Stratum1Admin)
+admin.site.register(Stratum0)
