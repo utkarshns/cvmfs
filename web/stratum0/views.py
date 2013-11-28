@@ -36,15 +36,10 @@ def stratum0_details(request, stratum0_fqrn):
 def stratum1_details(request, stratum0_fqrn, stratum1_id):
     stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
     stratum1 = get_object_or_404(Stratum1, pk=stratum1_id, stratum0=stratum0)
-    try:
-        context = { 'stratum0'     : stratum0,
-                    'stratum1'     : stratum1 }
-        return render(request, 'stratum0/stratum1_details.json', context,
-                      content_type="application/json")
-    except cvmfs.repository.RepositoryNotFound, e:
-        context = { 'stratum0_fqrn': stratum0_fqrn, 'stratum1_id': stratum1_id }
-        return render(request, 'stratum0/stratum1_not_found.json', context,
-                      content_type="application/json")
+    context = { 'stratum0'     : stratum0,
+                'stratum1'     : stratum1 }
+    return render(request, 'stratum0/stratum1_details.json', context,
+                  content_type="application/json")
 
 
 class StartReplicationRedirectView(RedirectView):
