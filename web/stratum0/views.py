@@ -15,19 +15,6 @@ def index(request):
     return render(request, 'stratum0/index.html', context)
 
 
-def _find_most_recent(stratum0, stratum1s):
-    recent = datetime.fromtimestamp(0, tz=tzutc())
-    if stratum0.manifest.last_modified > recent:
-        recent = stratum0.manifest.last_modified
-    for stratum1 in stratum1s:
-        if stratum1[1].last_replication > recent:
-            recent = stratum1[1].last_replication
-        if stratum1[1].replicating and \
-           stratum1[1].replicating_since > recent:
-            recent = stratum1[1].replicating_since
-    return recent
-
-
 @never_cache
 def details(request, stratum0_fqrn):
     try:
