@@ -17,25 +17,19 @@ def index(request):
 
 @never_cache
 def details(request, stratum0_fqrn):
-    try:
-        stratum0  = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
-        stratum1s = Stratum1.objects.filter(stratum0=stratum0)
-        context   = { 'stratum0'  : stratum0,
-                      'stratum1s' : stratum1s }
-        return render(request, 'stratum0/details.html', context)
-    except cvmfs.repository.RepositoryNotFound, e:
-        raise Http404
+    stratum0  = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
+    stratum1s = Stratum1.objects.filter(stratum0=stratum0)
+    context   = { 'stratum0'  : stratum0,
+                  'stratum1s' : stratum1s }
+    return render(request, 'stratum0/details.html', context)
 
 
 @never_cache
 def stratum0_details(request, stratum0_fqrn):
-    try:
-        stratum0 = cvmfs.repository.LocalRepository(stratum0_fqrn)
-        context  = { 'stratum0' : stratum0 }
-        return render(request, 'stratum0/stratum0_details.json', context,
-                      content_type="application/json")
-    except cvmfs.repository.RepositoryNotFound, e:
-        raise Http404
+    stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
+    context  = { 'stratum0' : stratum0 }
+    return render(request, 'stratum0/stratum0_details.json', context,
+                  content_type="application/json")
 
 
 @never_cache

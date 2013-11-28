@@ -35,4 +35,4 @@ class Stratum1(models.Model, Stratum):
     name          = models.CharField('name of the replica',     max_length=100)
 
     def __unicode__(self):
-        return self.name + " -> " + stratum0.name
+        return self.name + " -> " + self.stratum0.name

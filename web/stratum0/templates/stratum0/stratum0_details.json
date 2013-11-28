@@ -1,8 +1,13 @@
 {
     "status"            : "ok",
-    "fqrn"              : "{{ stratum0.manifest.repository_name }}",
-    "version"           : "{{ stratum0.version }}",
-    "revision"          : "{{ stratum0.manifest.revision }}",
-    "last_modified"     : "{{ stratum0.manifest.last_modified.isoformat }}",
-    "root_catalog_hash" : "{{ stratum0.manifest.root_catalog }}"
+    "fqrn"              : "{{ stratum0.repository.manifest.repository_name }}",
+    "revision"          : "{{ stratum0.repository.manifest.revision }}",
+    "last_modified"     : "{{ stratum0.repository.manifest.last_modified.isoformat }}",
+    "root_catalog_hash" : "{{ stratum0.repository.manifest.root_catalog }}",
+    "rest_api"          : "{{ stratum0.repository.has_rest_api }}",
+    {% if stratum0.repository.has_rest_api  %}
+    "version"           : "{{ stratum0.version }}"
+    {% else %}
+    "version"           : "unknown"
+    {% endif %}
 }

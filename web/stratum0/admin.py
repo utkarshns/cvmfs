@@ -23,9 +23,8 @@ class Stratum1AdminForm(forms.ModelForm):
         except cvmfs.repository.RepositoryNotFound, e:
             raise forms.ValidationError("%s does not point to a CVMFS replica" % url)
 
-        try:
-            repo = cvmfs.repository.LocalRepository(fqrn)
-        except cvmfs.repository.RepositoryNotFound, e:
+        repo = Stratum0.objects.filter(fqrn=fqrn)
+        if not repo:
             raise forms.ValidationError("the stratum 0 of %s was not found" % fqrn)
 
         return self.cleaned_data
