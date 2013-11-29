@@ -30,9 +30,12 @@ function compare_json(j1, j2) {
     var k2 = Object.keys(j2).sort();
     if (k1.length != k2.length) return false;
     for (var i = 0; i < k1.length; ++i) {
-        if (k1[i] != k2[i]) return false;
-        if (typeof j1[k1[i]] != typeof j2[k2[i]]) return false;
-        if (j1[k1[i]] != j2[k2[i]]) return false;
+        if (k1[i] != k2[i]) return false;                        // key name
+        if (typeof j1[k1[i]] != typeof j2[k2[i]]) return false;  // value type
+        if (typeof j1[k1[i]] == 'object') {                      // recursion
+            if(!compare_json(j1[k1[i]],j2[k2[i]])) return false; // deep compare
+        }
+        else if (j1[k1[i]] != j2[k2[i]]) return false;           // value
     }
     return true;
 }
