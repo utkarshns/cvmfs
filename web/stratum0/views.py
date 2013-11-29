@@ -6,7 +6,7 @@ from django.core.urlresolvers import reverse_lazy
 from datetime import datetime
 from dateutil.tz import tzutc
 
-from stratum0.models import Stratum0, Stratum1
+from stratum0.models import Stratum0, Stratum1, ReplicationSite
 import cvmfs.repository
 
 def index(request):
@@ -46,7 +46,25 @@ def stratum1_details(request, stratum0_fqrn, stratum1_id):
 
 @never_cache
 def matrix(request):
-    raise Http404("Not implemented yet")
+    replication_sites = ReplicationSite.objects.all().order_by('name')
+    stratum0s         = Stratum0.objects.all().order_by('name')
+    s_map = []
+
+    # TODO: fix that crap!
+    for stratum0 in stratum0s:
+        stratum1s = []
+        for repl_site in replication_sites:
+            try:
+                stratum1 = Stratum1.objects.get(stratum0=stratum0,
+                                                replication_site=repl_site)
+                stratum1s.append(stratum1)
+            except Exception, e:
+                stratum1s.append(None)
+        s_map.append((stratum0, stratum1s))
+
+    context = { 'replication_sites' : replication_sites,
+                'stratum1_map'      : s_map }
+    return render(request, 'stratum0/matrix.html', context)
 
 
 class StartReplicationRedirectView(RedirectView):
