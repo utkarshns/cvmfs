@@ -65,7 +65,7 @@ class StartReplicationRedirectView(RedirectView):
             raise Http404("Stratum 1 does not provide a REST API")
 
         if stratum1_repo.type != 'stratum1':
-            raise Http404("%s is not a Stratum 1" % stratum1.name)
+            raise Http404("%s is not a Stratum 1" % stratum1.url)
 
         stratum1_repo.start_replication()
         return reverse_lazy('details', kwargs={'stratum0_fqrn': stratum0.fqrn},

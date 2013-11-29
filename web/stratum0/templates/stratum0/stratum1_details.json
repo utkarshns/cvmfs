@@ -1,6 +1,6 @@
 {
     "status"            : "ok",
-    "name"              : "{{ stratum1.name }}",
+    "name"              : "{{ stratum1.replication_site.name }}",
     "id"                : {{ stratum1.id }},
     "fqrn"              : "{{ stratum1.repository.manifest.repository_name }}",
     "version"           : "{{ stratum1.repository.version }}",

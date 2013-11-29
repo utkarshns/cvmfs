@@ -2,6 +2,15 @@ from django.db import models
 import cvmfs.repository
 
 
+
+class ReplicationSite(models.Model):
+    name = models.CharField('name of the replication site', max_length=100);
+
+    def __unicode__(self):
+        return self.name
+
+
+
 class Stratum:
     _repo = None
 
@@ -19,7 +28,6 @@ class Stratum:
         return self._repo
 
 
-
 class Stratum0(models.Model, Stratum):
     fqrn = models.CharField('fully qualified repository name', max_length=100)
     url  = models.CharField('stratum 0 URL',                   max_length=255)
@@ -30,9 +38,9 @@ class Stratum0(models.Model, Stratum):
 
 
 class Stratum1(models.Model, Stratum):
-    stratum0      = models.ForeignKey(Stratum0)
-    url           = models.CharField('stratum 1 URL',           max_length=255)
-    name          = models.CharField('name of the replica',     max_length=100)
+    stratum0         = models.ForeignKey(Stratum0)
+    replication_site = models.ForeignKey(ReplicationSite)
+    url              = models.CharField('stratum 1 URL', max_length=255)
 
     def __unicode__(self):
-        return self.name + " -> " + self.stratum0.name
+        return self.replication_site.name + " -> " + self.stratum0.name

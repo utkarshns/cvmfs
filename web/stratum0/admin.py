@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.core.exceptions import ObjectDoesNotExist
 
-from stratum0.models import Stratum0, Stratum1
+from stratum0.models import Stratum0, Stratum1, ReplicationSite
 import cvmfs.repository
 
 
@@ -74,9 +74,9 @@ class Stratum1AdminForm(forms.ModelForm):
 
 
 class Stratum1Admin(admin.ModelAdmin):
-    fields       = ['name', 'url' ]
+    fields       = ['replication_site', 'url' ]
     form         = Stratum1AdminForm
-    list_display = ['name', 'stratum0', 'url' ]
+    list_display = ['replication_site', 'stratum0', 'url' ]
     list_filter  = ['stratum0']
 
     def save_model(self, request, obj, form, change):
@@ -89,3 +89,4 @@ class Stratum1Admin(admin.ModelAdmin):
 
 admin.site.register(Stratum0, Stratum0Admin)
 admin.site.register(Stratum1, Stratum1Admin)
+admin.site.register(ReplicationSite)

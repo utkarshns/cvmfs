@@ -15,7 +15,7 @@ var stratum1s = [
 {% for stratum1 in stratum1s %}
 {
     "id"            : "{{ stratum1.id   }}",
-    "name"          : "{{ stratum1.name }}",
+    "name"          : "{{ stratum1.replication_site.name }}",
     "info_url"      : "{% url 'stratum1_details' stratum0.fqrn stratum1.id %}"
 },
 {% endfor %}
@@ -227,7 +227,7 @@ window.onload = function() {
     </div>
     <div class="container pull-left" style="width: 500px">
         <div>
-            <h4>{{ stratum1.name }} Replica <small class="stratum1_version"></small></h4>
+            <h4>{{ stratum1.replication_site.name }} Replica <small class="stratum1_version"></small></h4>
         </div>
         <div class="stratum1_details" style="display: none;">
             Current Revision: <span class="stratum1_revision"></span>
