@@ -43,6 +43,11 @@ def stratum1_details(request, stratum0_fqrn, stratum1_id):
                   content_type="application/json")
 
 
+@never_cache
+def matrix(request):
+    raise Http404("Not implemented yet")
+
+
 class StartReplicationRedirectView(RedirectView):
     permanent=False
 
