@@ -5,6 +5,7 @@
     "last_modified"     : "{{ stratum0.repository.manifest.last_modified.isoformat }}",
     "root_catalog_hash" : "{{ stratum0.repository.manifest.root_catalog }}",
     "rest_api"          : "{{ stratum0.repository.has_rest_api }}",
+    "stratum1s"         : [ {% for stratum1 in stratum1s %} {{ stratum1.id }} {% if not forloop.last %},{% endif %}{% endfor %} ],
     {% if stratum0.repository.has_rest_api  %}
     "version"           : "{{ stratum0.version }}"
     {% else %}

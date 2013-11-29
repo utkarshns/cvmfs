@@ -27,7 +27,8 @@ def details(request, stratum0_fqrn):
 @never_cache
 def stratum0_details(request, stratum0_fqrn):
     stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
-    context  = { 'stratum0' : stratum0 }
+    stratum1s = Stratum1.objects.filter(stratum0=stratum0)
+    context  = { 'stratum0' : stratum0, 'stratum1s' : stratum1s }
     return render(request, 'stratum0/stratum0_details.json', context,
                   content_type="application/json")
 
