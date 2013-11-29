@@ -28,7 +28,8 @@ def details(request, stratum0_fqrn):
 def stratum0_details(request, stratum0_fqrn):
     stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
     stratum1s = Stratum1.objects.filter(stratum0=stratum0)
-    context  = { 'stratum0' : stratum0, 'stratum1s' : stratum1s }
+    context  = { 'stratum0' : stratum0,
+                 'stratum1s' : stratum1s }
     return render(request, 'stratum0/stratum0_details.json', context,
                   content_type="application/json")
 

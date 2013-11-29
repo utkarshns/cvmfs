@@ -57,13 +57,8 @@ function update_stratum1_display(s1_dom_id, json_data) {
     }
 
     // insert status icon
-    if (json_data.replicating == "True") {
-        replace_image(s1_status_img, "spinner.gif");
-    } else if (json_data.revision != json_data.stratum0_revision) {
-        replace_image(s1_status_img, "cross.png");
-    } else {
-        replace_image(s1_status_img, "tick.png");
-    }
+    var img_name = determine_replication_state_image(json_data);
+    replace_image(s1_status_img, img_name);
 
     // insert CernVM-FS version
     var v_str = "(does not provide RESTful API)";

@@ -1,16 +1,17 @@
 {
-    "status"            : "ok",
-    "name"              : "{{ stratum1.replication_site.name }}",
-    "id"                : {{ stratum1.id }},
-    "fqrn"              : "{{ stratum1.repository.manifest.repository_name }}",
-    "version"           : "{{ stratum1.repository.version }}",
-    "revision"          : "{{ stratum1.repository.manifest.revision }}",
-    "stratum0_revision" : "{{ stratum0.repository.manifest.revision }}",
-    "rest_api"          : "{{ stratum1.repository.has_rest_api }}",
-    "replicating"       : "{{ stratum1.repository.replicating }}",
+    "status"                : "ok",
+    "name"                  : "{{ stratum1.replication_site.name }}",
+    "id"                    : {{ stratum1.id }},
+    "fqrn"                  : "{{ stratum1.repository.manifest.repository_name }}",
+    "version"               : "{{ stratum1.repository.version }}",
+    "revision"              :  {{ stratum1.repository.manifest.revision }},
+    "stratum0_revision"     :  {{ stratum0.repository.manifest.revision }},
+    "stratum0_publish_time" : "{{ stratum0.repository.manifest.last_modified.isoformat }}",
+    "rest_api"              : "{{ stratum1.repository.has_rest_api }}",
+    "replicating"           : "{{ stratum1.repository.replicating }}",
   {% if stratum1.repository.last_replication|date:"Y" != '1970' %}
-    "last_replication"  : "{{ stratum1.repository.last_replication.isoformat }}"
+    "last_replication"      : "{{ stratum1.repository.last_replication.isoformat }}"
   {% else %}
-    "last_replication"  : "unknown"
+    "last_replication"      : "unknown"
   {% endif %}
 }
