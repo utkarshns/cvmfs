@@ -62,7 +62,8 @@ function update_stratum1_display(state_info, json_data) {
     }
 
     // insert status icon
-    var img_name = determine_replication_state_image(json_data);
+    var img_name = determine_replication_state_image(json_data,
+                                                     state_info.last_revision);
     replace_image(s1_status_img, img_name);
 
     // update persistent state info when revision has increased

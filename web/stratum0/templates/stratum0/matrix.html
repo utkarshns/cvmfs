@@ -25,6 +25,7 @@ function update_stratum1_display(state_info, json_data) {
     var state_dom_img = state_info.dom_img;
     var small_images  = true;
     var img = determine_replication_state_image(json_data,
+                                                state_info.last_revision,
                                                 small_images);
     if (state_info.last_revision < json_data.revision) {
         state_info.last_revision = json_data.revision;

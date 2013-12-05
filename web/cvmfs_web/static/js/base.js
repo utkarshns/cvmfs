@@ -12,9 +12,13 @@ function _mangle_status_image_name(img_name, small) {
     return result;
 }
 
-function determine_replication_state_image(stratum1_json) {
-    var small = (arguments.length == 2) ? arguments[1] : false;
+function determine_replication_state_image(stratum1_json, last_revision) {
+    var small    = (arguments.length == 3) ? arguments[2] : false;
     var img_name = "fail.png";
+    // avoid flickering due to out of sync caches
+    var revision = (stratum1_json.revision >= last_revision)
+                        ? stratum1_json.revision
+                        : last_revision;
 
     if (stratum1_json.status != 'ok') {
         return _mangle_status_image_name("fail.png", small);
@@ -24,11 +28,11 @@ function determine_replication_state_image(stratum1_json) {
         return _mangle_status_image_name("spinner.gif", small);
     }
 
-    if (stratum1_json.revision == stratum1_json.stratum0_revision) {
+    if (revision == stratum1_json.stratum0_revision) {
         return _mangle_status_image_name("tick.png", small);
     }
 
-    if (stratum1_json.revision + 1 == stratum1_json.stratum0_revision) {
+    if (revision + 1 == stratum1_json.stratum0_revision) {
         return _mangle_status_image_name("tick_degraded.png", small);
     }
 
