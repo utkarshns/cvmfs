@@ -29,6 +29,7 @@ set (CVMFS_UNITTEST_SOURCES
   t_test_utils.cc
   t_sanitizer.cc
   t_file_sandbox.cc
+  t_base64.cc
 
   # test utility functions
   testutil.cc testutil.h
