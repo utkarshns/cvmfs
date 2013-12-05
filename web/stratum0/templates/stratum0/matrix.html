@@ -21,10 +21,16 @@ var stratum1s = [
 {% endif %}{% endfor %}{% endfor %}
 ];
 
-function update_stratum1_display(state_dom_img, json_data) {
-    var small_images = true;
-    var img = determine_replication_state_image(json_data, small_images);
+function update_stratum1_display(state_info, json_data) {
+    var state_dom_img = state_info.dom_img;
+    var small_images  = true;
+    var img = determine_replication_state_image(json_data,
+                                                small_images);
+    if (state_info.last_revision < json_data.revision) {
+        state_info.last_revision = json_data.revision;
+    }
     replace_image(state_dom_img, img);
+    return state_info;
 }
 
 function mark_stratum1_as_broken(state_dom_img, json_data) {
@@ -35,7 +41,7 @@ function update_stratum1_status(stratum1) {
     leaky_update(
         stratum1.info_url,
         5 * 60,
-        $('#state_' + stratum1.id),
+        { 'dom_img' : $('#state_' + stratum1.id), 'last_revision' : 0 },
 
         update_stratum1_display,
         mark_stratum1_as_broken);

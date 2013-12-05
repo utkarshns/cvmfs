@@ -74,7 +74,7 @@ function leaky_update(url, min_refresh_rate, user_data, success_clb, fail_clb) {
         .done(function(json_data) {
             if (!old_json || !compare_json(old_json, json_data)) {
                 water_drops = 0;
-                success_clb(user_data, json_data);
+                user_data = success_clb(user_data, json_data);
             } else {
                 ++water_drops;
             }

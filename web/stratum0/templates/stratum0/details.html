@@ -34,9 +34,14 @@ function update_stratum0_display(s0_dom_id, json_data) {
     $(s0_dom_id + " .stratum0_version"      ).html(json_data.version);
     $(s0_dom_id + " .stratum0_last_modified").html(format_timestamp(json_data.last_modified));
     $(s0_dom_id + " .stratum0_root_catalog" ).html(json_data.root_catalog_hash);
+
+    return s0_dom_id;
 }
 
-function update_stratum1_display(s1_dom_id, json_data) {
+function update_stratum1_display(state_info, json_data) {
+    var s1_dom_id = state_info.s1_dom_id;
+
+    // hard reload of page when stratum0 revision changes
     if (initial_stratum0_revision != json_data.stratum0_revision) {
        location.reload();
     }
@@ -50,7 +55,7 @@ function update_stratum1_display(s1_dom_id, json_data) {
         var s1_status_img = $(s1_dom_id + " .stratum1_state");
         replace_image(s1_status_img, "fail.png");
         s1_details_div.hide();
-        return;
+        return state_info;
     } else {
         // uncover details div
         $(s1_dom_id + " .stratum1_details").show();
@@ -59,6 +64,11 @@ function update_stratum1_display(s1_dom_id, json_data) {
     // insert status icon
     var img_name = determine_replication_state_image(json_data);
     replace_image(s1_status_img, img_name);
+
+    // update persistent state info when revision has increased
+    if (state_info.last_revision < json_data.revision) {
+        state_info.last_revision = json_data.revision;
+    }
 
     // insert CernVM-FS version
     var v_str = "(does not provide RESTful API)";
@@ -79,14 +89,15 @@ function update_stratum1_display(s1_dom_id, json_data) {
     }
 
     // show replication button
-    if (json_data.rest_api == "True" &&
-        json_data.revision != json_data.stratum0_revision)
+    if (json_data.rest_api       == "True" &&
+        state_info.last_revision <  json_data.stratum0_revision)
     {
         s1_replication_button.show();
     } else {
         s1_replication_button.hide();
     }
     update_retina_image($(s1_dom_id + " .stratum1_repl_button img"));
+    return state_info;
 }
 
 function update_stratum0_status(stratum0_fqrn) {
@@ -103,7 +114,7 @@ function update_stratum1_status(stratum1) {
     leaky_update(
         stratum1.info_url,
         5 * 60,
-        '#stratum1_' + stratum1.id,
+        { 's1_dom_id' : '#stratum1_' + stratum1.id, 'last_revision' : 0 },
 
         update_stratum1_display,
         function(s1_dom_id, json_data) {
