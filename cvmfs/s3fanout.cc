@@ -494,7 +494,7 @@ void S3FanoutManager::SetUrlOptions(JobInfo *info) {
 
 
 /**
- * Adds transfer time and downloaded bytes to the global counters.
+ * Adds transfer time and uploaded bytes to the global counters.
  */
 void S3FanoutManager::UpdateStatistics(CURL *handle) {
   double val;
@@ -505,7 +505,7 @@ void S3FanoutManager::UpdateStatistics(CURL *handle) {
 
 
 /**
- * Retry if possible if not on no-cache and if not already done too often.
+ * Retry if possible and if not already done too often.
  */
 bool S3FanoutManager::CanRetry(const JobInfo *info) {
   pthread_mutex_lock(lock_options_);
@@ -823,7 +823,7 @@ void S3FanoutManager::Init(const unsigned max_pool_handles) {
   pool_max_handles_ = max_pool_handles;
   watch_fds_max_ = 4*pool_max_handles_;
 
-  opt_timeout_ = 5;
+  opt_timeout_ = 20;
   statistics_ = new Statistics();
   *user_agent_ = "User-Agent: cvmfs " + string(VERSION);
 
@@ -882,8 +882,7 @@ void S3FanoutManager::Fini() {
 
 
 /**
- * Spawns the I/O worker thread and switches the module in multi-threaded mode.
- * No way back except Fini(); Init();
+ * Spawns the I/O worker thread.  No way back except Fini(); Init();
  */
 void S3FanoutManager::Spawn() {
   MakePipe(pipe_terminate_);
@@ -898,9 +897,9 @@ void S3FanoutManager::Spawn() {
 
 
 /**
- * Downloads data from an unsecure outside channel (currently HTTP or file).
+ * Uploads data to S3.  Returns a file descriptor that gets the return value.
  */
-Failures S3FanoutManager::Push(JobInfo *info) {
+int S3FanoutManager::Push(JobInfo *info) {
   assert(info != NULL);
   assert(info->url != NULL);
 
@@ -913,14 +912,12 @@ Failures S3FanoutManager::Push(JobInfo *info) {
     MakePipe(info->wait_at);
   }
   WritePipe(pipe_jobs_[1], &info, sizeof(info));
-  ReadPipe(info->wait_at[0], &result, sizeof(result));
 
-  return result;
+  return info->wait_at[0];
 }
 
 
 /**
- * Sets two timeout values for proxied and for direct conections, respectively.
  * The timeout counts for all sorts of connection phases,
  * DNS, HTTP connect, etc.
  */
@@ -932,7 +929,7 @@ void S3FanoutManager::SetTimeout(const unsigned seconds) {
 
 
 /**
- * Receives the currently active timeout values.
+ * Receives the currently active timeout value.
  */
 void S3FanoutManager::GetTimeout(unsigned *seconds) {
   pthread_mutex_lock(lock_options_);

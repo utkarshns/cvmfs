@@ -29,7 +29,6 @@ namespace s3fanout {
  */
 enum Origin {
   kOriginMem = 1,
-  kOriginFile,
   kOriginPath,
 };  // Origin
 
@@ -73,7 +72,6 @@ struct JobInfo {
     size_t pos;
     const unsigned char *data;
   } origin_mem;
-  FILE *origin_file;
   const std::string *origin_path;
   const std::string *access_key;
   const std::string *secret_key;
@@ -83,14 +81,9 @@ struct JobInfo {
   // One constructor per destination + head request
   JobInfo() { wait_at[0] = wait_at[1] = -1; }
   JobInfo(const std::string *u, const std::string *a, const std::string *s,
-          const std::string *p) :
-          url(u), access_key(a), secret_key(s),
+          const std::string *b, const std::string *k, const std::string *p) :
+          url(u), access_key(a), secret_key(s), bucket(b), object_key(k),
           origin(kOriginPath), origin_path(p)
-          { wait_at[0] = wait_at[1] = -1; }
-  JobInfo(const std::string *u, const std::string *a, const std::string *s,
-          FILE *f) :
-          url(u), access_key(a), secret_key(s),
-          origin(kOriginFile), origin_file(f)
           { wait_at[0] = wait_at[1] = -1; }
   JobInfo(const std::string *u, const std::string *a, const std::string *s,
           const std::string *b, const std::string *k,
@@ -109,6 +102,7 @@ struct JobInfo {
   // Internal state, don't touch
   CURL *curl_handle;
   struct curl_slist *http_headers;
+  FILE *origin_file;
   int wait_at[2];  /**< Pipe used for the return value */
   Failures error_code;
   unsigned char num_retries;
@@ -124,7 +118,7 @@ class S3FanoutManager {
   void Init(const unsigned max_pool_handles);
   void Fini();
   void Spawn();
-  Failures Push(JobInfo *info);
+  int Push(JobInfo *info);
 
   void SetTimeout(const unsigned seconds);
   void GetTimeout(unsigned *seconds);
