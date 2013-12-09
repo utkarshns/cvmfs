@@ -281,7 +281,7 @@ void Hmac(const std::string &key,
           Any *any_digest);
 bool HashFile(const std::string filename, Any *any_digest);
 
-}  // namespace hash
+}  // namespace shash
 
 #ifdef CVMFS_NAMESPACE_GUARD
 }

@@ -43,9 +43,6 @@ namespace s3fanout {
 static Failures PrepareOrigin(JobInfo *info) {
   info->origin_mem.pos = 0;
 
-  if (info->origin == kOriginFile)
-    assert(info->origin_file != NULL);
-
   if (info->origin == kOriginPath) {
     assert(info->origin_path != NULL);
     info->origin_file = fopen(info->origin_path->c_str(), "r");
@@ -94,6 +91,9 @@ static size_t CallbackCurlHeader(void *ptr, size_t size, size_t nmemb,
         case 403:
           info->error_code = kFailForbidden;
           break;
+        case 404:
+          info->error_code = kFailNotFound;
+          break;
         default:
           info->error_code = kFailOther;
       }
@@ -126,6 +126,17 @@ static size_t CallbackCurlData(void *ptr, size_t size, size_t nmemb,
     info->origin_mem.pos += send_size;
     LogCvmfs(kLogS3Fanout, kLogDebug, "pushed out %d bytes", send_size);
     return send_size;
+  } else if (info->origin == kOriginPath) {
+    size_t read_bytes = fread(ptr, 1, num_bytes, info->origin_file);
+    if (read_bytes != num_bytes) {
+      if (ferror(info->origin_file) != 0) {
+        LogCvmfs(kLogS3Fanout, kLogDebug, "local I/O error reading %s",
+                 info->origin_path->c_str());
+        return CURL_READFUNC_ABORT;
+      }
+    }
+    LogCvmfs(kLogS3Fanout, kLogDebug, "pushed out %d bytes", read_bytes);
+    return read_bytes;
   }
 
   return CURL_READFUNC_ABORT;
@@ -264,7 +275,14 @@ void *S3FanoutManager::MainUpload(void *data) {
       if (!still_running)
         gettimeofday(&timeval_start, NULL);
       CURL *handle = s3fanout_mgr->AcquireCurlHandle();
-      s3fanout_mgr->InitializeRequest(info, handle);
+      info->request = info->test_and_set ? JobInfo::kReqHead : JobInfo::kReqPut;
+      Failures init_failure = s3fanout_mgr->InitializeRequest(info, handle);
+      if (init_failure != kFailOk) {
+        s3fanout_mgr->ReleaseCurlHandle(info, handle);
+        info->error_code = init_failure;
+        WritePipe(info->wait_at[1], &info->error_code,
+                  sizeof(info->error_code));
+      }
       s3fanout_mgr->SetUrlOptions(info);
       curl_multi_add_handle(s3fanout_mgr->curl_multi_, handle);
       retval = curl_multi_socket_action(s3fanout_mgr->curl_multi_,
@@ -281,7 +299,7 @@ void *S3FanoutManager::MainUpload(void *data) {
         if (s3fanout_mgr->watch_fds_[i].revents & (POLLIN | POLLPRI))
           ev_bitmask |= CURL_CSELECT_IN;
         if (s3fanout_mgr->watch_fds_[i].revents & (POLLOUT | POLLWRBAND))
-          ev_bitmask |= CURL_CSELECT_IN;
+          ev_bitmask |= CURL_CSELECT_OUT;
         if (s3fanout_mgr->watch_fds_[i].revents & (POLLERR | POLLHUP | POLLNVAL))
           ev_bitmask |= CURL_CSELECT_ERR;
         s3fanout_mgr->watch_fds_[i].revents = 0;
@@ -360,7 +378,6 @@ CURL *S3FanoutManager::AcquireCurlHandle() {
     curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 100);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CallbackCurlHeader);
     curl_easy_setopt(handle, CURLOPT_READFUNCTION, CallbackCurlData);
-    curl_easy_setopt(handle, CURLOPT_UPLOAD, 1);
   } else {
     handle = *(pool_handles_idle_->begin());
     pool_handles_idle_->erase(pool_handles_idle_->begin());
@@ -423,7 +440,7 @@ string S3FanoutManager::MkAuthoritzation(const string &access_key,
  * Request parameters set the URL and other options such as timeout and
  * proxy.
  */
-void S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) {
+Failures S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) {
   // Initialize internal download state
   info->curl_handle = handle;
   info->error_code = kFailOk;
@@ -431,32 +448,66 @@ void S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) {
   info->backoff_ms = 0;
   info->http_headers = NULL;
 
-  // Authorization and integrity
-  string timestamp = RfcTimestamp();
+  // HEAD or PUT
   shash::Any content_md5;
   content_md5.algorithm = shash::kMd5;
-  if (info->origin == kOriginMem) {
-    curl_easy_setopt(handle, CURLOPT_INFILESIZE_LARGE, info->origin_mem.size);
-    HashMem(info->origin_mem.data, info->origin_mem.size, &content_md5);
+  string timestamp;
+  if (info->request == JobInfo::kReqHead) {
+    curl_easy_setopt(handle, CURLOPT_UPLOAD, 0);
+    curl_easy_setopt(handle, CURLOPT_NOBODY, 1);
+    timestamp = RfcTimestamp();
+    info->http_headers =
+      curl_slist_append(info->http_headers,
+                        MkAuthoritzation(*(info->access_key),
+                                         *(info->secret_key),
+                                         timestamp, "", "HEAD", "",
+                                         *(info->bucket),
+                                         *(info->object_key)).c_str());
+    info->http_headers =
+      curl_slist_append(info->http_headers, "Content-Length: 0");
+  } else {
+    curl_easy_setopt(handle, CURLOPT_NOBODY, 0);
+    curl_easy_setopt(handle, CURLOPT_UPLOAD, 1);
+    // MD5 content hash
+    if (info->origin == kOriginMem) {
+      curl_easy_setopt(handle, CURLOPT_INFILESIZE_LARGE, info->origin_mem.size);
+      shash::HashMem(info->origin_mem.data, info->origin_mem.size, &content_md5);
+    } else if (info->origin == kOriginPath) {
+      bool retval = shash::HashFile(*(info->origin_path), &content_md5);
+      if (!retval)
+        return kFailLocalIO;
+      int64_t file_size = GetFileSize(*(info->origin_path));
+      if (file_size == -1)
+        return kFailLocalIO;
+      curl_easy_setopt(handle, CURLOPT_INFILESIZE_LARGE, file_size);
+    }
+    LogCvmfs(kLogS3Fanout, kLogDebug, "content hash: %s",
+             content_md5.ToString().c_str());
+    string content_md5_base64 =
+      Base64(string(reinterpret_cast<char *>(content_md5.digest),
+                    content_md5.GetDigestSize()));
+    info->http_headers =
+      curl_slist_append(info->http_headers,
+                        ("Content-MD5: " + content_md5_base64).c_str());
+
+    // Authorization
+    timestamp = RfcTimestamp();
+    info->http_headers =
+      curl_slist_append(info->http_headers,
+                        MkAuthoritzation(*(info->access_key),
+                                         *(info->secret_key),
+                                         timestamp, "binary/octet-stream",
+                                         "PUT", content_md5_base64,
+                                         *(info->bucket),
+                                         *(info->object_key)).c_str());
+
+    info->http_headers =
+      curl_slist_append(info->http_headers, "Content-Type: binary/octet-stream");
   }
 
-  string content_md5_base64 =
-    Base64(string(reinterpret_cast<char *>(content_md5.digest),
-                  content_md5.GetDigestSize()));
-  info->http_headers =
-    curl_slist_append(info->http_headers,
-                      ("Content-MD5: " + content_md5_base64).c_str());
-  info->http_headers =
-    curl_slist_append(info->http_headers, "Content-Type: binary/octet-stream");
+  // Common headers
   info->http_headers =
     curl_slist_append(info->http_headers, ("Date: " + timestamp).c_str());
-  info->http_headers =
-    curl_slist_append(info->http_headers,
-                      MkAuthoritzation(*(info->access_key), *(info->secret_key),
-                                       timestamp, "binary/octet-stream",
-                                       "PUT", content_md5_base64,
-                                       *(info->bucket),
-                                       *(info->object_key)).c_str());
   info->http_headers =
     curl_slist_append(info->http_headers, "Connection: Keep-Alive");
   info->http_headers = curl_slist_append(info->http_headers, "Pragma:");
@@ -473,6 +524,7 @@ void S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) {
   if (opt_ipv4_only_)
     curl_easy_setopt(handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
+  return kFailOk;
 }
 
 
@@ -487,7 +539,8 @@ void S3FanoutManager::SetUrlOptions(JobInfo *info) {
   curl_easy_setopt(curl_handle, CURLOPT_LOW_SPEED_TIME, opt_timeout_);
   pthread_mutex_unlock(lock_options_);
 
-  curl_easy_setopt(curl_handle, CURLOPT_URL,info->url->c_str());
+  string url = url_constructor_->MkUrl(*(info->bucket), *(info->object_key));
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
   //LogCvmfs(kLogDownload, kLogDebug, "set url %s for info %p / curl handle %p",
   //         EscapeUrl((url_prefix + *(info->url))).c_str(), info, curl_handle);
 }
@@ -512,7 +565,8 @@ bool S3FanoutManager::CanRetry(const JobInfo *info) {
   unsigned max_retries = opt_max_retries_;
   pthread_mutex_unlock(lock_options_);
 
-  return info->num_retries < max_retries;
+  return (info->error_code == kFailHostConnection) &&
+         (info->num_retries < max_retries);
 }
 
 
@@ -549,232 +603,80 @@ void S3FanoutManager::Backoff(JobInfo *info) {
  * \return true if another download should be performed, false otherwise
  */
 bool S3FanoutManager::VerifyAndFinalize(const int curl_error, JobInfo *info) {
-  LogCvmfs(kLogS3Fanout, kLogDebug, "Verify downloaded url %s (curl error %d)",
-           info->url->c_str(), curl_error);
+  LogCvmfs(kLogS3Fanout, kLogDebug, "Verify downloaded object %s "
+           "(curl error %d, info error %d, info request %d)",
+           info->object_key->c_str(), curl_error, info->error_code, info->request);
   UpdateStatistics(info->curl_handle);
-  return false;
 
-  /*// Verification and error classification
+  // Verification and error classification
   switch (curl_error) {
     case CURLE_OK:
-      // Verify content hash
-      if (info->expected_hash) {
-        shash::Any match_hash;
-        shash::Final(info->hash_context, &match_hash);
-        if (match_hash != *(info->expected_hash)) {
-          LogCvmfs(kLogDownload, kLogDebug,
-                   "hash verification of %s failed (expected %s, got %s)",
-                   info->url->c_str(), info->expected_hash->ToString().c_str(),
-                   match_hash.ToString().c_str());
-          info->error_code = kFailBadData;
-          break;
-        }
-      }
-
-      // Decompress memory in a single run
-      if ((info->destination == kDestinationMem) && info->compressed) {
-        void *buf;
-        uint64_t size;
-        bool retval = zlib::DecompressMem2Mem(info->destination_mem.data,
-                                              info->destination_mem.size,
-                                              &buf, &size);
-        if (retval) {
-          free(info->destination_mem.data);
-          info->destination_mem.data = static_cast<char *>(buf);
-          info->destination_mem.size = size;
-        } else {
-          LogCvmfs(kLogDownload, kLogDebug,
-                   "decompression (memory) of url %s failed",
-                   info->url->c_str());
-          info->error_code = kFailBadData;
-          break;
-        }
-      }
-
       info->error_code = kFailOk;
       break;
     case CURLE_UNSUPPORTED_PROTOCOL:
     case CURLE_URL_MALFORMAT:
-      info->error_code = kFailBadUrl;
-      break;
-    case CURLE_COULDNT_RESOLVE_PROXY:
-      info->error_code = kFailProxyResolve;
+      info->error_code = kFailBadRequest;
       break;
     case CURLE_COULDNT_RESOLVE_HOST:
       info->error_code = kFailHostResolve;
       break;
     case CURLE_COULDNT_CONNECT:
     case CURLE_OPERATION_TIMEDOUT:
-    case CURLE_PARTIAL_FILE:
-      if (info->proxy != "")
-        // This is a guess.  Fail-over can still change to switching host
-        info->error_code = kFailProxyConnection;
-      else
-        info->error_code = kFailHostConnection;
+    case CURLE_SEND_ERROR:
+    case CURLE_RECV_ERROR:
+      info->error_code = kFailHostConnection;
       break;
     case CURLE_ABORTED_BY_CALLBACK:
     case CURLE_WRITE_ERROR:
       // Error set by callback
       break;
     default:
-      LogCvmfs(kLogDownload, kLogSyslogErr, "unexpected curl error (%d) while "
-               "trying to fetch %s", curl_error, info->url->c_str());
+      LogCvmfs(kLogS3Fanout, kLogDebug | kLogSyslogErr,
+               "unexpected curl error (%d) while trying to upload %s",
+               curl_error, info->object_key->c_str());
       info->error_code = kFailOther;
       break;
   }
 
+  // Transform head to put
+  if ((info->error_code == kFailNotFound) &&
+      (info->request == JobInfo::kReqHead))
+  {
+    LogCvmfs(kLogS3Fanout, kLogDebug, "not found: %s, uploading",
+             info->object_key->c_str());
+    info->request = JobInfo::kReqPut;
+    curl_slist_free_all(info->http_headers);
+    info->http_headers = NULL;
+    InitializeRequest(info, info->curl_handle);
+    return true;  // Again, Put
+  }
+
   // Determination if download should be repeated
   bool try_again = false;
-  bool same_url_retry = CanRetry(info);
   if (info->error_code != kFailOk) {
-    pthread_mutex_lock(lock_options_);
-    if ((info->error_code) == kFailBadData && !info->nocache)
-      try_again = true;
-    if ( same_url_retry || (
-         ( (info->error_code == kFailHostResolve) ||
-           (info->error_code == kFailHostConnection) ||
-           (info->error_code == kFailHostHttp)) &&
-         info->probe_hosts &&
-         opt_host_chain_ && (info->num_used_hosts < opt_host_chain_->size()))
-       )
-    {
-      try_again = true;
-    }
-    if ( same_url_retry || (
-         ( (info->error_code == kFailProxyResolve) ||
-           (info->error_code == kFailProxyConnection) ||
-           (info->error_code == kFailProxyHttp)) )
-       )
-    {
-      try_again = true;
-      // If all proxies failed, do a next round with the next host
-      if (!same_url_retry && (info->num_used_proxies >= opt_num_proxies_)) {
-        // Check if this can be made a host fail-over
-        if (info->probe_hosts &&
-            opt_host_chain_ &&
-            (info->num_used_hosts < opt_host_chain_->size()))
-        {
-          // reset proxy group if not already performed by other handle
-          if (opt_proxy_groups_) {
-            if ((opt_proxy_groups_current_ > 0) ||
-                (opt_proxy_groups_current_burned_ > 1))
-            {
-              string old_proxy;
-              old_proxy = (*opt_proxy_groups_)[opt_proxy_groups_current_][0];
-              opt_proxy_groups_current_ = 0;
-              RebalanceProxiesUnlocked();
-              opt_timestamp_backup_proxies_ = 0;
-              if (opt_proxy_groups_) {
-                LogCvmfs(kLogDownload, kLogDebug | kLogSyslogWarn,
-                         "switching proxy from %s to %s "
-                         "(reset proxies for host failover)",
-                         old_proxy.c_str(), (*opt_proxy_groups_)[0][0].c_str());
-              }
-            }
-          }
-
-          // Make it a host failure
-          info->num_used_proxies = 1;
-          info->error_code = kFailHostAfterProxy;
-        } else {
-          try_again = false;
-        }
-      }  // Make a proxy failure a host failure
-    }  // Proxy failure assumed
-    pthread_mutex_unlock(lock_options_);
+    try_again = CanRetry(info);
   }
 
   if (try_again) {
-    LogCvmfs(kLogDownload, kLogDebug, "Trying again on same curl handle, "
-             "same url: %d", same_url_retry);
-    // Reset internal state and destination
-    if ((info->destination == kDestinationMem) && info->destination_mem.data) {
-      if (info->destination_mem.data)
-        free(info->destination_mem.data);
-      info->destination_mem.data = NULL;
-      info->destination_mem.size = 0;
-      info->destination_mem.pos = 0;
-    }
-    if ((info->destination == kDestinationFile) ||
-        (info->destination == kDestinationPath))
-    {
-      if ((fflush(info->destination_file) != 0) ||
-          (ftruncate(fileno(info->destination_file), 0) != 0))
-      {
-        info->error_code = kFailLocalIO;
-        goto verify_and_finalize_stop;
-      }
-      rewind(info->destination_file);
-    }
-    if (info->expected_hash)
-      shash::Init(info->hash_context);
-    if (info->compressed)
-      zlib::DecompressInit(&info->zstream);
-
-    // Failure handling
-    bool switch_proxy = false;
-    bool switch_host = false;
-    switch (info->error_code) {
-      case kFailBadData:
-        curl_easy_setopt(info->curl_handle, CURLOPT_HTTPHEADER,
-                         http_headers_nocache_);
-        info->nocache = true;
-        break;
-      case kFailProxyResolve:
-      case kFailProxyHttp:
-        switch_proxy = true;
-        break;
-      case kFailHostResolve:
-      case kFailHostHttp:
-      case kFailHostAfterProxy:
-        switch_host = true;
-        break;
-      case kFailProxyConnection:
-        if (same_url_retry)
-          Backoff(info);
-        else
-          switch_proxy = true;
-        break;
-      case kFailHostConnection:
-        if (same_url_retry)
-          Backoff(info);
-        else
-          switch_host = true;
-        break;
-      default:
-        // No other errors expected when retrying
-        abort();
-    }
-    if (switch_proxy) {
-      SwitchProxy(info);
-      info->num_used_proxies++;
-      SetUrlOptions(info);
-    }
-    if (switch_host) {
-      SwitchHost(info);
-      info->num_used_hosts++;
-      SetUrlOptions(info);
-    }
+    LogCvmfs(kLogDownload, kLogDebug, "Trying again to upload %s",
+             info->object_key->c_str());
+    // Reset origin
+    if (info->origin == kOriginMem)
+      info->origin_mem.pos = 0;
+    if (info->origin == kOriginPath)
+      rewind(info->origin_file);
 
     return true;  // try again
   }
 
  verify_and_finalize_stop:
   // Finalize, flush destination file
-  if ((info->destination == kDestinationFile) &&
-      fflush(info->destination_file) != 0)
-  {
-    info->error_code = kFailLocalIO;
-  } else if (info->destination == kDestinationPath) {
-    if (fclose(info->destination_file) != 0)
+  if (info->origin == kOriginPath) {
+    if (fclose(info->origin_file) != 0)
       info->error_code = kFailLocalIO;
-    info->destination_file = NULL;
+    info->origin_file = NULL;
   }
-
-  if (info->compressed)
-    zlib::DecompressFini(&info->zstream);
-
-  return false;  // stop transfer and return to Fetch()*/
+  return false;  // stop transfer and return to Push()
 }
 
 
@@ -814,7 +716,9 @@ S3FanoutManager::~S3FanoutManager() {
 }
 
 
-void S3FanoutManager::Init(const unsigned max_pool_handles) {
+void S3FanoutManager::Init(const unsigned max_pool_handles,
+                           AbstractUrlConstructor *url_constructor)
+{
   atomic_init32(&multi_threaded_);
   int retval = curl_global_init(CURL_GLOBAL_ALL);
   assert(retval == CURLE_OK);
@@ -823,7 +727,7 @@ void S3FanoutManager::Init(const unsigned max_pool_handles) {
   pool_max_handles_ = max_pool_handles;
   watch_fds_max_ = 4*pool_max_handles_;
 
-  opt_timeout_ = 20;
+  opt_timeout_ = 30;
   statistics_ = new Statistics();
   *user_agent_ = "User-Agent: cvmfs " + string(VERSION);
 
@@ -844,6 +748,8 @@ void S3FanoutManager::Init(const unsigned max_pool_handles) {
   {
     opt_ipv4_only_ = true;
   }
+
+  url_constructor_ = url_constructor;
 }
 
 
@@ -901,7 +807,8 @@ void S3FanoutManager::Spawn() {
  */
 int S3FanoutManager::Push(JobInfo *info) {
   assert(info != NULL);
-  assert(info->url != NULL);
+  assert(info->bucket != NULL);
+  assert(info->object_key != NULL);
 
   Failures result;
   result = PrepareOrigin(info);

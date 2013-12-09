@@ -40,6 +40,9 @@ enum Failures {
   kFailLocalIO,
   kFailBadRequest,
   kFailForbidden,
+  kFailHostResolve,
+  kFailHostConnection,
+  kFailNotFound,
   kFailOther,
 };  // Failures
 
@@ -65,7 +68,11 @@ struct Statistics {
  * Contains all the information to specify an upload job.
  */
 struct JobInfo {
-  const std::string *url;
+  enum RequestType {
+    kReqHead = 0,
+    kReqPut,
+  };
+
   Origin origin;
   struct {
     size_t size;
@@ -77,21 +84,24 @@ struct JobInfo {
   const std::string *secret_key;
   const std::string *bucket;
   const std::string *object_key;
+  bool test_and_set;
 
   // One constructor per destination + head request
-  JobInfo() { wait_at[0] = wait_at[1] = -1; }
-  JobInfo(const std::string *u, const std::string *a, const std::string *s,
+  JobInfo() { wait_at[0] = wait_at[1] = -1; http_headers = NULL; }
+  JobInfo(const std::string *a, const std::string *s,
           const std::string *b, const std::string *k, const std::string *p) :
-          url(u), access_key(a), secret_key(s), bucket(b), object_key(k),
+          access_key(a), secret_key(s), bucket(b), object_key(k),
           origin(kOriginPath), origin_path(p)
-          { wait_at[0] = wait_at[1] = -1; }
-  JobInfo(const std::string *u, const std::string *a, const std::string *s,
+          { wait_at[0] = wait_at[1] = -1; http_headers = NULL;
+            test_and_set = false; }
+  JobInfo(const std::string *a, const std::string *s,
           const std::string *b, const std::string *k,
           const unsigned char *buffer, size_t size) :
-          url(u), access_key(a), secret_key(s), bucket(b), object_key(k),
+          access_key(a), secret_key(s), bucket(b), object_key(k),
           origin(kOriginMem)
-          { wait_at[0] = wait_at[1] = -1;
-          origin_mem.size = size; origin_mem.data = buffer; }
+          { wait_at[0] = wait_at[1] = -1; http_headers = NULL;
+            test_and_set = false;
+            origin_mem.size = size; origin_mem.data = buffer; }
   ~JobInfo() {
     if (wait_at[0] >= 0) {
       close(wait_at[0]);
@@ -103,6 +113,7 @@ struct JobInfo {
   CURL *curl_handle;
   struct curl_slist *http_headers;
   FILE *origin_file;
+  RequestType request;
   int wait_at[2];  /**< Pipe used for the return value */
   Failures error_code;
   unsigned char num_retries;
@@ -110,12 +121,20 @@ struct JobInfo {
 };  // JobInfo
 
 
+class AbstractUrlConstructor {
+ public:
+  virtual std::string MkUrl(const std::string &bucket,
+                            const std::string &objkey) = 0;
+};
+
+
 class S3FanoutManager {
  public:
   S3FanoutManager();
   ~S3FanoutManager();
 
-  void Init(const unsigned max_pool_handles);
+  void Init(const unsigned max_pool_handles,
+            AbstractUrlConstructor *url_constructor);
   void Fini();
   void Spawn();
   int Push(JobInfo *info);
@@ -133,7 +152,7 @@ class S3FanoutManager {
 
   CURL *AcquireCurlHandle();
   void ReleaseCurlHandle(JobInfo *info, CURL *handle);
-  void InitializeRequest(JobInfo *info, CURL *handle);
+  Failures InitializeRequest(JobInfo *info, CURL *handle);
   void SetUrlOptions(JobInfo *info);
   void UpdateStatistics(CURL *handle);
   bool CanRetry(const JobInfo *info);
@@ -171,8 +190,9 @@ class S3FanoutManager {
   unsigned opt_max_retries_;
   unsigned opt_backoff_init_ms_;
   unsigned opt_backoff_max_ms_;
-
   bool opt_ipv4_only_;
+
+  AbstractUrlConstructor *url_constructor_;
 
   // Writes and reads should be atomic because reading happens in a different
   // thread than writing.
