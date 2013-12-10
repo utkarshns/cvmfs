@@ -689,7 +689,7 @@ std::string RfcTimestamp() {
 
   struct tm timestamp;
   time_t now = time(NULL);
-  localtime_r(&now, &timestamp);
+  gmtime_r(&now, &timestamp);
 
   char buffer[30];
   snprintf(buffer, sizeof(buffer), "%s, %02d %s %d %02d:%02d:%02d %s",

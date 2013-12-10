@@ -512,6 +512,8 @@ Failures S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) {
   info->http_headers = curl_slist_append(info->http_headers, "Pragma:");
   // No 100-continue
   info->http_headers = curl_slist_append(info->http_headers, "Expect:");
+  // Strip unnecessary header
+  info->http_headers = curl_slist_append(info->http_headers, "Accept:");
   info->http_headers = curl_slist_append(info->http_headers,
                                          user_agent_->c_str());
 
