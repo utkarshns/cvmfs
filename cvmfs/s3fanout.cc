@@ -375,7 +375,6 @@ CURL *S3FanoutManager::AcquireCurlHandle() {
 
     curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);
     //curl_easy_setopt(curl_default, CURLOPT_FAILONERROR, 1);
-    curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 100);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CallbackCurlHeader);
     curl_easy_setopt(handle, CURLOPT_READFUNCTION, CallbackCurlData);
   } else {
@@ -536,7 +535,6 @@ void S3FanoutManager::SetUrlOptions(JobInfo *info) {
 
   pthread_mutex_lock(lock_options_);
   curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, opt_timeout_);
-  curl_easy_setopt(curl_handle, CURLOPT_LOW_SPEED_TIME, opt_timeout_);
   pthread_mutex_unlock(lock_options_);
 
   string url = url_constructor_->MkUrl(*(info->bucket), *(info->object_key));
@@ -603,7 +601,7 @@ void S3FanoutManager::Backoff(JobInfo *info) {
  * \return true if another download should be performed, false otherwise
  */
 bool S3FanoutManager::VerifyAndFinalize(const int curl_error, JobInfo *info) {
-  LogCvmfs(kLogS3Fanout, kLogDebug, "Verify downloaded object %s "
+  LogCvmfs(kLogS3Fanout, kLogDebug, "Verify uploaded/tested object %s "
            "(curl error %d, info error %d, info request %d)",
            info->object_key->c_str(), curl_error, info->error_code, info->request);
   UpdateStatistics(info->curl_handle);
@@ -666,6 +664,7 @@ bool S3FanoutManager::VerifyAndFinalize(const int curl_error, JobInfo *info) {
     if (info->origin == kOriginPath)
       rewind(info->origin_file);
 
+    Backoff(info);
     return true;  // try again
   }
 
@@ -727,7 +726,7 @@ void S3FanoutManager::Init(const unsigned max_pool_handles,
   pool_max_handles_ = max_pool_handles;
   watch_fds_max_ = 4*pool_max_handles_;
 
-  opt_timeout_ = 30;
+  opt_timeout_ = 20;
   statistics_ = new Statistics();
   *user_agent_ = "User-Agent: cvmfs " + string(VERSION);
 
@@ -736,7 +735,8 @@ void S3FanoutManager::Init(const unsigned max_pool_handles,
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETFUNCTION, CallbackCurlSocket);
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETDATA,
                     static_cast<void *>(this));
-  curl_multi_setopt(curl_multi_, CURLMOPT_MAXCONNECTS, watch_fds_max_);
+  //curl_multi_setopt(curl_multi_, CURLMOPT_PIPELINING, 1);
+  //curl_multi_setopt(curl_multi_, CURLMOPT_MAX_PIPELINE_LENGTH, 64);
   curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS,
                     pool_max_handles_);
 
