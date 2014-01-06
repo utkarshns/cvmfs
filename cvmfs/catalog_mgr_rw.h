@@ -89,6 +89,8 @@ class WritableCatalogManager : public AbstractCatalogManager {
   void RemoveNestedCatalog(const std::string &mountpoint);
   bool IsTransitionPoint(const std::string &path);
 
+  void Clone(const std::string &from, const std::string &to);
+
   /**
    * TODO
    */

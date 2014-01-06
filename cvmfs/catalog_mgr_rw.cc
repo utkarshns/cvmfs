@@ -14,6 +14,7 @@
 #include <cstdlib>
 
 #include <string>
+#include <map>
 
 #include "compression.h"
 #include "catalog_rw.h"
@@ -673,6 +674,58 @@ bool WritableCatalogManager::IsTransitionPoint(const string &path) {
   const bool result = entry.IsNestedCatalogRoot();
   SyncUnlock();
   return result;
+}
+
+
+/**
+ * Copies a directory hierary from 'from' to 'to'
+ */
+void WritableCatalogManager::Clone(const std::string &from,
+                                   const std::string &to)
+{
+  // NOT Locked (otherwise introduces nested locks)!
+  map<uint64_t, DirectoryEntryList> hardlink_groups;
+
+  DirectoryEntryList listing;
+  if (!Listing(from, &listing)) {
+    LogCvmfs(kLogCatalog, kLogStderr,
+             "failed to list content of %s", from.c_str());
+    assert(false);
+  }
+  for (DirectoryEntryList::const_iterator i = listing.begin(),
+       iEnd = listing.end(); i != iEnd; ++i)
+  {
+    if (i->linkcount() > 1) {
+      // TODO: can be done more efficiently
+      DirectoryEntryList hardlink_list;
+      map<uint64_t, DirectoryEntryList>::iterator x =
+        hardlink_groups.find(i->inode());
+      if (x == hardlink_groups.end()) {
+        hardlink_list.push_back(*i);
+        hardlink_groups[i->inode()] = hardlink_list;
+      } else {
+        hardlink_list = x->second;
+        hardlink_list.push_back(*i);
+        hardlink_groups[i->inode()] = hardlink_list;
+      }
+      continue;
+    }
+    if (i->IsDirectory()) {
+      AddDirectory(*i, to);
+      if (i->IsNestedCatalogMountpoint()) {
+        CreateNestedCatalog(to + "/" + i->name().ToString());
+      }
+      Clone(from + "/" + i->name().ToString(), to + "/" + i->name().ToString());
+    } else {
+      AddFile(*i, to);
+    }
+  }
+
+  /*for (map<uint64_t, DirectoryEntryList>::const_iterator i =
+       hardlink_groups.begin(), iEnd = hardlink_groups.end(); i != iEnd; ++i)
+  {
+    AddHardlinkGroup(i->second, to);
+  }*/
 }
 
 
