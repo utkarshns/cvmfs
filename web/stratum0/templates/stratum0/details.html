@@ -27,15 +27,17 @@ var stratum0_info_url         = "{% url 'stratum0_details' stratum0.fqrn %}";
 var stratum1_revisions        = {};
 
 function update_stratum0_display(s0_dom_id, json_data) {
-    if (initial_stratum0_revision != json_data.revision) {
+    var stratum0 = json_data.stratum0
+
+    if (initial_stratum0_revision != stratum0.revision) {
         location.reload();
     }
 
-    $(s0_dom_id + " .stratum0_revision"     ).html(json_data.revision);
+    $(s0_dom_id + " .stratum0_revision"     ).html(stratum0.revision);
     // .min_stratum1_revision is updated dynamically in stratum1_display!
-    $(s0_dom_id + " .stratum0_version"      ).html(json_data.version);
-    $(s0_dom_id + " .stratum0_last_modified").html(format_timestamp(json_data.last_modified));
-    $(s0_dom_id + " .stratum0_root_catalog" ).html(json_data.root_catalog_hash);
+    $(s0_dom_id + " .stratum0_version"      ).html(stratum0.version);
+    $(s0_dom_id + " .stratum0_last_modified").html(format_timestamp(stratum0.last_modified));
+    $(s0_dom_id + " .stratum0_root_catalog" ).html(stratum0.root_catalog_hash);
 
     return s0_dom_id;
 }
