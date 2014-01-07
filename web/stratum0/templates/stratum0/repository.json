@@ -1,13 +1,20 @@
 {
         "fqrn"              : "{{ repository.manifest.repository_name }}",
-        "revision"          : "{{ repository.manifest.revision }}",
+        "revision"          : {{ repository.manifest.revision }},
         "last_modified"     : "{{ repository.manifest.last_modified.isoformat }}",
         "root_catalog_hash" : "{{ repository.manifest.root_catalog }}",
         "rest_api"          : "{{ repository.has_rest_api }}",
         "type"              : "{{ repository.type }}",
         {% if repository.has_rest_api  %}
-        "version"           : "{{ repository.version }}"
+        "version"           : "{{ repository.version }}",
         {% else %}
-        "version"           : "unknown"
+        "version"           : "unknown",
+        {% endif %}
+
+        "replicating"           : "{{ stratum1.repository.replicating }}",
+        {% if stratum1.repository.last_replication|date:"Y" != '1970' %}
+        "last_replication"      : "{{ stratum1.repository.last_replication.isoformat }}"
+        {% else %}
+        "last_replication"      : "unknown"
         {% endif %}
     }
