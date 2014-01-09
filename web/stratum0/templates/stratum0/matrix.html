@@ -25,18 +25,21 @@ function update_stratum1_display(state_info, json_data) {
     var state_dom_img = state_info.dom_img;
     var small_images  = true;
 
+    if (json_data.status != "ok") {
+        // show a red flag if something went wrong
+        replace_image(state_dom_img, "fail_small.png");
+        return state_info;
+    }
+
     var stratum1 = json_data.stratum1;
     var stratum0 = json_data.stratum0;
 
-    var img = determine_replication_state_image(json_data.status,
-                                                stratum0,
-                                                stratum1,
-                                                state_info.last_revision,
-                                                small_images);
-    if (state_info.last_revision < stratum1.revision) {
-        state_info.last_revision = stratum1.revision;
-    }
+    // avoid flicker due to asynchronous cache responses
+    stratum1 = filter_cache_flickering(state_info, stratum1);
+
+    var img = determine_replication_state_image(stratum0, stratum1);
     replace_image(state_dom_img, img);
+
     return state_info;
 }
 
@@ -48,7 +51,7 @@ function update_stratum1_status(stratum1) {
     leaky_update(
         stratum1.info_url,
         5 * 60,
-        { 'dom_img' : $('#state_' + stratum1.id), 'last_revision' : 0 },
+        { 'dom_img' : $('#state_' + stratum1.id) },
 
         update_stratum1_display,
         mark_stratum1_as_broken);

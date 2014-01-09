@@ -62,6 +62,9 @@ function update_stratum1_display(state_info, json_data) {
     var stratum1 = json_data.stratum1;
     var stratum0 = json_data.stratum0;
 
+    // avoid flicker due to asynchronous cache responses
+    stratum1 = filter_cache_flickering(state_info, stratum1);
+
     // hard reload of page when stratum0 revision changes
     if (initial_stratum0_revision != stratum0.revision) {
        location.reload();
@@ -73,7 +76,6 @@ function update_stratum1_display(state_info, json_data) {
 
     if (json_data.status != "ok") {
         // show a red flag if something went wrong
-        var s1_status_img = $(s1_dom_id + " .stratum1_state");
         replace_image(s1_status_img, "fail.png");
         s1_details_div.hide();
         return state_info;
@@ -83,16 +85,8 @@ function update_stratum1_display(state_info, json_data) {
     }
 
     // insert status icon
-    var img_name = determine_replication_state_image(json_data.status,
-                                                     stratum0,
-                                                     stratum1,
-                                                     state_info.last_revision);
+    var img_name = determine_replication_state_image(stratum0, stratum1);
     replace_image(s1_status_img, img_name);
-
-    // update persistent state info when revision has increased
-    if (state_info.last_revision < stratum1.revision) {
-        state_info.last_revision = stratum1.revision;
-    }
 
     // insert CernVM-FS version
     var v_str = "(does not provide RESTful API)";
@@ -117,14 +111,13 @@ function update_stratum1_display(state_info, json_data) {
     }
 
     // show replication button
-    if (stratum1.rest_api       == "True" &&
-        state_info.last_revision <  stratum0.revision)
-    {
+    if (stratum1.rest_api == "True" && stratum1.revision <  stratum0.revision) {
         s1_replication_button.show();
     } else {
         s1_replication_button.hide();
     }
     update_retina_image($(s1_dom_id + " .stratum1_repl_button img"));
+
     return state_info;
 }
 
@@ -143,8 +136,7 @@ function update_stratum1_status(stratum1) {
         stratum1.info_url,
         5 * 60,
         { 's1_dom_id'     : '#stratum1_' + stratum1.id,
-          's0_dom_id'     : '#stratum0',
-          'last_revision' : 0 },
+          's0_dom_id'     : '#stratum0' },
 
         update_stratum1_display,
         function(s1_dom_id, json_data) {

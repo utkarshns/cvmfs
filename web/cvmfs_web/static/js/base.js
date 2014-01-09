@@ -12,34 +12,64 @@ function _mangle_status_image_name(img_name, small) {
     return result;
 }
 
-function determine_replication_state_image(status_code,
-                                           stratum0,
-                                           stratum1,
-                                           last_revision) {
-    var small    = (arguments.length == 5) ? arguments[4] : false;
-    var img_name = "fail.png";
-    // avoid flickering due to out of sync caches
-    var revision = (stratum1.revision >= last_revision)
-                        ? stratum1.revision
-                        : last_revision;
+function determine_replication_state_image(stratum0, stratum1) {
+    // parse (optional) third argument
+    var small = (arguments.length == 3) ? arguments[2] : false;
 
-    if (status_code != 'ok') {
-        return _mangle_status_image_name("fail.png", small);
-    }
+    // threshold definitions
+    var max_time_offset     = 3600000; // one hour
+    var max_revision_offset = 5;
 
+    // if the repository is in the state of replicating, we show
+    // a spinner and nothing else...
     if (stratum1.replicating == "True") {
         return _mangle_status_image_name("spinner.gif", small);
     }
 
-    if (revision == stratum0.revision) {
-        return _mangle_status_image_name("tick.png", small);
+    // parse 'last modified' timestamps
+    var t_now      = new Date();
+    var t_stratum0 = new Date(stratum0.last_modified);
+    var t_stratum1 = new Date(stratum1.last_modified);
+
+    // check if the Stratum1 is more than 'max_time_offset' behind the Stratum0
+    // this would mean a significant degradation of service
+    if (t_stratum0 - t_stratum1 > 0 && t_now - t_stratum0 >= max_time_offset) {
+        return _mangle_status_image_name("cross.png", small);
     }
 
-    if (revision + 1 == stratum0.revision) {
+    // check if the Stratum1's revision number lacks far behind the Stratum0's
+    // which would indicate a high degradation of service as well
+    if (stratum0.revision - stratum1.revision >= max_revision_offset) {
+        return _mangle_status_image_name("cross.png", small);
+    }
+
+    // if neither the revision nor the 'last_modified' time lack far behind but
+    // the Stratum1 is also not on the latest revision, we show a degraded sign
+    // Note that this is no critial situation, just for indication...
+    if (stratum0.revision != stratum1.revision) {
         return _mangle_status_image_name("tick_degraded.png", small);
     }
 
-    return _mangle_status_image_name("cross.png", small);
+    // if all the above degradation checks did not jump in the Stratum1 is con-
+    // sidered to be at full health
+    return _mangle_status_image_name("tick.png", small);
+}
+
+function filter_cache_flickering(state_info, stratum1) {
+    var effective_stratum1 = stratum1;
+
+    // update persistent state info when revision has increased
+    // this fights flickering due to out of sync caches
+    if (state_info.last_stratum1 === undefined) {
+        state_info.last_stratum1 = stratum1;
+    }
+    if (state_info.last_stratum1.revision < stratum1.revision) {
+        state_info.last_stratum1 = stratum1;
+    } else if (state_info.last_stratum1.revision > stratum1.revision) {
+        effective_stratum1 = state_info.last_stratum1; // flicker occured...
+    }
+
+    return effective_stratum1;
 }
 
 function compare_json(j1, j2) {
