@@ -62,8 +62,6 @@ function update_retina_image(img_object) {
     if (is_retina) {
         img_object.attr("src", is_retina[1] + is_retina[2]);
     }
-    img_object.attr("width", "");
-    img_object.attr("height", "");
     new RetinaImage(img_object[0])
 }
 
