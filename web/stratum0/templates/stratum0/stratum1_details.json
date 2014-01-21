@@ -2,6 +2,7 @@
     "status"                : "ok",
     "id"                    : {{ stratum1.id }},
     "name"                  : "{{ stratum1.replication_site.name }}",
+    "url"                   : "{{ stratum1.url }}",
 
     "stratum1"              : {% include "stratum0/repository.json" with repository=stratum1.repository %},
     "stratum0"              : {% include "stratum0/repository.json" with repository=stratum0.repository %}
