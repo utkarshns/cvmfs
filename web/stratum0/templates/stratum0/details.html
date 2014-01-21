@@ -89,7 +89,7 @@ function update_stratum1_display(state_info, json_data) {
     replace_image(s1_status_img, img_name);
 
     // insert CernVM-FS version
-    var v_str = "(does not provide RESTful API)";
+    var v_str = "";
     if (stratum1.rest_api == "True") {
         var v_str = "(running CernVM-FS " + stratum1.version + ")";
     }
