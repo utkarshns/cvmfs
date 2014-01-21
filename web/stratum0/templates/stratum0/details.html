@@ -156,7 +156,7 @@ window.onload = function() {
 }
 </script>
 
-<h2>Local Stratum 0</h2>
+<h3>Local Stratum 0</h3>
 <div class="container" id="stratum0">
     <table class="table">
         <tr>
@@ -186,16 +186,17 @@ window.onload = function() {
     </table>
 </div>
 
-<h2>Stratum 1 Replicas</h2>
+<h3>Stratum 1 Replicas</h3>
 
 {% for stratum1 in stratum1s %}
-<div class="container" style="margin-bottom: 20px" id="stratum1_{{ stratum1.id }}">
+<div class="container" style="margin-top: 30px" id="stratum1_{{ stratum1.id }}">
     <div class="pull-left" style="margin-right: 20px; width: 64px; height: 64px">
         <img src="{% static "images/loading.gif" %}" class="stratum1_state">
     </div>
     <div class="container pull-left" style="width: 500px">
         <div>
-            <h4>{{ stratum1.replication_site.name }} Replica <small class="stratum1_version"></small></h4>
+            <span style="font-weight: bold; font-size: 12pt">{{ stratum1.replication_site.name }} Replica</span>
+            <small class="stratum1_version"></small>
         </div>
         <div class="stratum1_details" style="display: none;">
             Revision: <span class="stratum1_revision"></span>
