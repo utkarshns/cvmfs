@@ -26,7 +26,7 @@ class Stratum0AdminForm(forms.ModelForm):
 
         try:
             stratum0 = Stratum0.objects.get(fqrn=fqrn)
-            if stratum0:
+            if not self.instance.pk and stratum0:
                 raise forms.ValidationError(
                     "The URL '%s' points to the repository '%s' which is already used by '%s'." % (url, fqrn, stratum0.name))
         except ObjectDoesNotExist, e:
@@ -36,12 +36,12 @@ class Stratum0AdminForm(forms.ModelForm):
 
 
 class Stratum0Admin(admin.ModelAdmin):
-    fields       = ['name', 'url']
+    fields       = ['name', 'url', 'project_url', 'project_description']
     form         = Stratum0AdminForm
     list_display = ['name', 'fqrn', 'url' ]
 
     def save_model(self, request, obj, form, change):
-        # availability of <obj.url> was checked in Stratum1AdminForm.clean
+        # availability of <obj.url> was checked in Stratum0AdminForm.clean
         repo     = cvmfs.repository.RemoteRepository(obj.url)
         obj.fqrn = repo.fqrn
         super(Stratum0Admin, self).save_model(request, obj, form, change)
