@@ -156,7 +156,24 @@ window.onload = function() {
 }
 </script>
 
-<h3>Local Stratum 0</h3>
+{% if stratum0.project_description or stratum0.project_url %}
+<h3>Project Information</h3>
+<div class="container" id="project_info">
+    <table class="table">
+        <tr>
+            <td>Website:</td>
+            <td class="project_url"><a href="{{ stratum0.project_url }}" target="_blank">{{ stratum0.project_url }}</a></td>
+        </tr>
+        <tr>
+            <td>Description:</td>
+            <td class="project_description">{{ stratum0.project_description }}</td>
+        </tr>
+    </table>
+</div>
+
+{% endif %}
+
+<h3>Stratum 0</h3>
 <div class="container" id="stratum0">
     <table class="table">
         <tr>
