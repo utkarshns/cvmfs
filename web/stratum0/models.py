@@ -32,6 +32,8 @@ class Stratum0(models.Model, Stratum):
     fqrn = models.CharField('fully qualified repository name', max_length=100)
     url  = models.CharField('stratum 0 URL',                   max_length=255)
     name = models.CharField('name of the repository',          max_length=100)
+    project_url = models.CharField('Project Website',          max_length=255, blank=True)
+    project_description = models.TextField('Project Description',              blank=True)
 
     def __unicode__(self):
         return self.name + " (" + self.fqrn + ")"
