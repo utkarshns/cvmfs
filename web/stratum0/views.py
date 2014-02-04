@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404, HttpResponse
 from django.views.generic.base import RedirectView
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import never_cache, cache_page
 from django.core.urlresolvers import reverse_lazy
 from datetime import datetime
 from dateutil.tz import tzutc
@@ -24,8 +24,8 @@ def details(request, stratum0_fqrn):
     return render(request, 'stratum0/details.html', context)
 
 
-@never_cache
-def stratum0_details(request, stratum0_fqrn):
+@cache_page(60)
+def stratum0_details(request, stratum0_fqrn):    
     stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
     stratum1s = Stratum1.objects.filter(stratum0=stratum0)
     context  = { 'stratum0' : stratum0,
@@ -34,7 +34,7 @@ def stratum0_details(request, stratum0_fqrn):
                   content_type="application/json")
 
 
-@never_cache
+@cache_page(60)
 def stratum1_details(request, stratum0_fqrn, stratum1_id):
     stratum0 = get_object_or_404(Stratum0, fqrn=stratum0_fqrn)
     stratum1 = get_object_or_404(Stratum1, pk=stratum1_id, stratum0=stratum0)
