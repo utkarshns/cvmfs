@@ -114,7 +114,8 @@ function leaky_update(url, min_refresh_rate, user_data, success_clb, fail_clb) {
                 ++water_drops;
             }
 
-            var next_update = Math.min(1000 * Math.pow(2, water_drops),
+            var next_update = 10000; // minimal waiting time (milliseconds)
+            next_update    += Math.min(1000 * Math.pow(2, water_drops),
                                        1000 * min_refresh_rate);
             setTimeout(function() {
                            leaky_update(url,
