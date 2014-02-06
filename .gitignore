@@ -10,3 +10,6 @@ python/python_cvmfsutils.egg-info/*
 python/MANIFEST
 web/cvmfs_web/settings.py
 web/db.sqlite3
+web/dist/*
+web/django_cvmfs_monitor.egg-info/*
+
