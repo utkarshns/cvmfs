@@ -1,0 +1,4 @@
+This web application provides a monitoring portal for the state of a CernVM-FS
+Content Delivery Networkk. It allows system administrators to register Stratum0s
+along with their Stratum1 replications and visualize the propagation of updates
+on different replication sites.
