@@ -1,0 +1,34 @@
+1. install django-cvmfs-monitor rpm package
+2. remove '.example' from /opt/django-cvmfs-monitor-*.*.*/cvmfs_web/settings.py.example
+3. create a directory for static files and run 
+      python <install dir>/manage.py collectstatic
+   in that directory
+4. adapt the settings.py file according to your environment, i.e. set:
+      * ADMINS            contact information to the site's administrator
+      * DATABASES         your database connection information
+      * BASE_DIR          to the absolute installation directory
+      * SECRET_KEY        make it unique
+      * STATICFILES_DIRS  absolute path to static files (see step 3)
+5. run the following commands in the installation directory:
+      python manage.py syncdb
+      python manage.py migrate
+5. setup your web server to interface with django.wsgi (f.e. mod_wsgi)
+6. setup your web server to serve static files (see step 3)
+   (see also settings.py - STATIC_URL)
+
+Template for an apache configuration:
+	Alias /cvmfs-monitor/favicon.ico /opt/cvmfs-monitor-statics/favicon.ico
+	Alias /favicon.ico /opt/cvmfs-monitor-statics/favicon.ico
+	Alias /cvmfs-monitor/static /opt/cvmfs-monitor-statics/
+
+	<Directory /opt/cvmfs-monitor-statics>
+	  Order deny,allow
+	  Allow from all
+	</Directory>
+
+	WSGIScriptAlias /cvmfs-monitor /opt/django-cvmfs-monitor/django.wsgi
+
+	<Directory /opt/django-cvmfs-monitor>
+	  Order allow,deny
+	  Allow from all
+	</Directory>
