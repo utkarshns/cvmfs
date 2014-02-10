@@ -1,0 +1,7 @@
+0.1.0:
+  * Initial version
+  * Features:
+    * Public CVMFS monitoring website
+    * List information about registered repositories 
+    * Visualize and monitor state of Stratum1s for specific repositories
+    * Matrix view to visualize all registered repositories
