@@ -1,0 +1,21 @@
+include COPYING
+include ChangeLog
+
+include manage.py
+include django.wsgi
+
+include cvmfs_web/settings.py.example
+exclude cvmfs_web/settings.py
+
+recursive-include cvmfs_web/static/bootstrap/css   *.css
+recursive-include cvmfs_web/static/bootstrap/fonts *.eot *.svg *.ttf *.woff
+recursive-include cvmfs_web/static/bootstrap/js    *.js
+recursive-include cvmfs_web/static/css             *.css
+recursive-include cvmfs_web/static/images          *.png *.ico *.gif
+recursive-include cvmfs_web/static/jquery          *.js
+recursive-include cvmfs_web/static/js              *.js
+recursive-include cvmfs_web/static/retina/css      *.less
+recursive-include cvmfs_web/static/retina/js       *.js
+recursive-include cvmfs_web/templates              *.html
+recursive-include cvmfs_web/templates/admin        *.html
+recursive-include stratum0/templates/stratum0      *.html *.json
