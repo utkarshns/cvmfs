@@ -33,8 +33,14 @@ SOURCE_TAR="$(ls $DEST_DIR)"
 cd $DEST_DIR
 echo "done ($SOURCE_TAR)"
 
+echo -n "extracting source tar ball and rename directory... "
+tar xzf $SOURCE_TAR > /dev/null               || die "fail! (tar)"
+SOURCE_DIR="$(q 'name')"
+mv "$(q 'name')-$(q 'version')" "$SOURCE_DIR" || die "fail! (mv)"
+echo "done"
+
 echo -n "building rpm package... "
-fpm -s tar -t rpm                                                 \
+fpm -s dir -t rpm                                                 \
     --name          "$(q 'name')"                                 \
     --package       .                                             \
     --prefix        $PACKAGE_PREFIX                               \
@@ -54,6 +60,10 @@ fpm -s tar -t rpm                                                 \
     --depends       'cvmfsutils   >= 0.1.0'                       \
     --depends       'Django14     >= 1.4'                         \
     --depends       'Django-south >= 0.7.5'                       \
-    ${SOURCE_TAR} > /dev/null
+    ${SOURCE_DIR} > /dev/null
 [ $? -eq 0 ] || die "fail!"
+echo "done"
+
+echo -n "remove source directory... "
+rm -fR "$SOURCE_DIR" || die "fail!"
 echo "done"
