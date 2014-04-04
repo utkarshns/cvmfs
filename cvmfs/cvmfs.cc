@@ -1420,7 +1420,7 @@ static void cvmfs_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name,
   if (attr == "user.pid") {
     attribute_value = StringifyInt(pid_);
   } else if (attr == "user.version") {
-    attribute_value = string(VERSION) + "." + string(CVMFS_PATCH_LEVEL);
+    attribute_value = string(VERSION);
   } else if (attr == "user.hash") {
     if (!d.checksum().IsNull()) {
       attribute_value = d.checksum().ToString() + " (SHA-1)";

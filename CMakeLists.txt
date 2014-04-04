@@ -19,8 +19,9 @@ message ("Running CMake version ${CMAKE_VERSION}")
 #---------------------
 set (CernVM-FS_VERSION_MAJOR 2)
 set (CernVM-FS_VERSION_MINOR 1)
-set (CernVM-FS_VERSION_PATCH 17)
-set (CernVM-FS_VERSION_STRING "${CernVM-FS_VERSION_MAJOR}.${CernVM-FS_VERSION_MINOR}.${CernVM-FS_VERSION_PATCH}")
+set (CernVM-FS_VERSION_FEATURE 18)
+set (CernVM-FS_VERSION_PATCH 1)
+set (CernVM-FS_VERSION_STRING "${CernVM-FS_VERSION_MAJOR}.${CernVM-FS_VERSION_MINOR}.${CernVM-FS_VERSION_FEATURE}.${CernVM-FS_VERSION_PATCH}")
 
 #
 # set the path where cmake looks for additional modules

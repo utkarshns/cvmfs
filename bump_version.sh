@@ -2,20 +2,21 @@
 set -e
 
 VERSION=$(grep "^## CVMFS_VERSION" CMakeLists.txt | cut -d" " -f3)
-MINOR_VERSION=$(echo $VERSION | cut -d. -f3)
+FEATURE_VERSION=$(echo $VERSION | cut -d. -f3)
 echo "Current version: $VERSION"
 
-MINOR_VERSION=$(($MINOR_VERSION+1))
-VERSION="$(echo $VERSION | cut -d. -f1).$(echo $VERSION | cut -d. -f2).$MINOR_VERSION"
+FEATURE_VERSION=$(($FEATURE_VERSION+1))
+VERSION="$(echo $VERSION | cut -d. -f1).$(echo $VERSION | cut -d. -f2).$FEATURE_VERSION"
 echo "New version: $VERSION"
 
 echo "Patching CMakeLists.txt"
 sed -i -e "s/^## CVMFS_VERSION \(.*\)/## CVMFS_VERSION $VERSION/" CMakeLists.txt
-sed -i -e "s/^set (CernVM-FS_VERSION_PATCH \(.*\)/set (CernVM-FS_VERSION_PATCH $MINOR_VERSION)/" CMakeLists.txt
+sed -i -e "s/^set (CernVM-FS_VERSION_FEATURE \(.*\)/set (CernVM-FS_VERSION_FEATURE $FEATURE_VERSION)/" CMakeLists.txt
+sed -i -e "s/^set (CernVM-FS_VERSION_PATCH \(.*\)/set (CernVM-FS_VERSION_PATCH 0)/" CMakeLists.txt
 grep VERSION CMakeLists.txt
 
 echo "Patching RPM"
-sed -i -e "s/^Version: \(.*\)/Version: $VERSION/" packaging/rpm/cvmfs-universal.spec
+sed -i -e "s/^Version: \(.*\)/Version: ${VERSION}/" packaging/rpm/cvmfs-universal.spec
 grep Version packaging/rpm/cvmfs-universal.spec
 
 echo "Patching Mac Package"
