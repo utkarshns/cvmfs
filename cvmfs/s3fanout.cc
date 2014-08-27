@@ -452,6 +452,8 @@ Failures S3FanoutManager::InitializeRequest(JobInfo *info, CURL *handle) const {
     retval = curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, req.c_str());
     assert(retval == CURLE_OK);
   } else {
+    retval = curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, NULL);
+    assert(retval == CURLE_OK);
     retval = curl_easy_setopt(handle, CURLOPT_UPLOAD, 1);
     assert(retval == CURLE_OK);
     retval = curl_easy_setopt(handle, CURLOPT_NOBODY, 0);
