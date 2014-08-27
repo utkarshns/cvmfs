@@ -12,6 +12,7 @@
 
 #include <cstdio>
 #include <cassert>
+#include <ctime>
 
 #include "compression.h"
 #include "smalloc.h"
@@ -174,8 +175,15 @@ manifest::Manifest *SyncMediator::Commit() {
     LogCvmfs(kLogPublish, kLogStdout, "");
   }
 
+  time_t rawtime;
+  time(&rawtime);
+  struct tm now;
+  localtime_r(&rawtime, &now);
+
   LogCvmfs(kLogPublish, kLogStdout,
-           "Waiting for upload of files before committing...");
+           "Waiting for upload of files before committing [%02d-%02d-%04d %02d:%02d:%02d %s]...",
+           (now.tm_mon)+1, now.tm_mday, (now.tm_year)+1900, now.tm_hour,
+           now.tm_min, now.tm_sec, now.tm_zone);
   params_->spooler->WaitForUpload();
 
   if (!hardlink_queue_.empty()) {
@@ -221,7 +229,12 @@ manifest::Manifest *SyncMediator::Commit() {
 
   params_->spooler->UnregisterListeners();
 
-  LogCvmfs(kLogPublish, kLogStdout, "Committing file catalogs...");
+  time(&rawtime);
+  localtime_r(&rawtime, &now);
+
+  LogCvmfs(kLogPublish, kLogStdout, "Committing file catalogs [%02d-%02d-%04d %02d:%02d:%02d %s]...",
+    (now.tm_mon)+1, now.tm_mday, (now.tm_year)+1900, now.tm_hour,
+    now.tm_min, now.tm_sec, now.tm_zone);
   if (params_->spooler->GetNumberOfErrors() > 0) {
     LogCvmfs(kLogPublish, kLogStderr, "failed to commit files");
     return NULL;
