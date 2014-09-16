@@ -4,7 +4,7 @@ set -e
 
 echo "Continuous Integration Build Script"
 
-script_location=$(dirname $(readlink --canonicalize $0))
+script_location=$(cd $(dirname "$0") && pwd -P)
 . ${script_location}/common.sh
 
 # figure out some information about the version to be built
@@ -30,6 +30,9 @@ case $PACKAGE_TYPE in
     ;;
   deb)
     sh ci/jenkins/build_deb.sh "$tarball"
+    ;;
+  pkg)
+    sh ci/jenkins/build_pkg.sh "$tarball"
     ;;
   *)
     echo "unknown package type '$PACKAGE_TYPE'"
