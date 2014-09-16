@@ -31,6 +31,7 @@ mkdir -p $results_dir
 cd $build_dir
 cp ${git_dir}/packaging/rpm/cvmfs-universal.spec .
 cp ${git_dir}/packaging/rpm/cvmfs.te             ./SOURCES
+cp ${git_dir}/packaging/rpm/cvmfs.fc             ./SOURCES
 cp $source_tarball                               ./SOURCES
 
 # configure spec file (if necessary)
