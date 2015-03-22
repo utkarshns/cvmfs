@@ -12,8 +12,8 @@ TEST(T_Smalloc, 1byteAllocation) {
   free(mem);
 }
 
-TEST(T_Smalloc, 2gBAllocation) {
-  void* mem = smalloc(2147483648);
+TEST(T_Smalloc, 4gBAllocation) {
+  void* mem = smalloc(4294967296);
   EXPECT_TRUE(NULL != mem);
   free(mem);
 }
